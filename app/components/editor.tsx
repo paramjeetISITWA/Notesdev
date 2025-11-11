@@ -27,6 +27,8 @@ import {
   Wallet,
   Plus,
   Menu,
+  MoreVertical,
+  Copy,
 } from "lucide-react"
 import toast from "react-hot-toast"
 
@@ -34,6 +36,13 @@ import { SimpleEditor } from '@/components/tiptap-templates/simple/simple-editor
 import { VersionDropdownButton } from '@/components/tiptap-ui/version-dropdown-button/version-dropdown-button'
 import { PasswordPopup } from '@/components/tiptap-ui/password-popup/password-popup'
 import { PasswordPromptPopup } from '@/components/tiptap-ui/password-prompt-popup/password-prompt-popup'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/tiptap-ui-primitive/dropdown-menu/dropdown-menu'
+import { usePathname } from 'next/navigation'
 import {
   loadOrCreateSolanaWallet,
   uploadToArweave,
@@ -81,7 +90,9 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
   const [showPasswordPopup, setShowPasswordPopup] = useState(false)
   const [showPasswordPromptPopup, setShowPasswordPromptPopup] = useState(false)
   const [promptVersionNumber, setPromptVersionNumber] = useState<number | null>(null)
+  const [showMoreMenu, setShowMoreMenu] = useState(false)
   const { editor } = useEditorContext()
+  const pathname = usePathname()
 
   // Initialize wallet and documents on component mount
   useEffect(() => {
@@ -89,7 +100,7 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
       try {
         const wallet = await loadOrCreateSolanaWallet()
         setWalletAddress(wallet.address)
-        toast.success(`Solana wallet initialized: ${wallet.address.slice(0, 8)}...${wallet.address.slice(-8)}`)
+        toast.success(`Solana wallet initialized: ${wallet.address.slice(0, 8)}...${wallet.address.slice(-8)}`, { duration: 1000 })
       } catch (error) {
         console.error('Wallet initialization error:', error)
         toast.error('Failed to initialize Solana wallet')
@@ -113,6 +124,7 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
     const currentAddress = getSolanaWalletAddress()
     if (currentAddress) {
       setWalletAddress(currentAddress)
+
     }
   }, [])
 
@@ -272,7 +284,7 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
           }
         }
 
-        toast.success(`Content saved to Arweave! Transaction ID: ${result.transactionId}`)
+        toast.success(`Content saved to Arweave! Transaction ID: ${result.transactionId}`, { duration: 1000 })
         setIsSaved(true)
       } else {
         // Check if it's a balance issue and show funding instructions
@@ -291,11 +303,11 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
             { duration: 10000 }
           )
         } else {
-          toast.error(`Upload failed: ${result.error}`)
+          toast.error(`Upload failed: ${result.error}`, { duration: 1000 })
         }
       }
     } catch (error) {
-      toast.error('Failed to save content to Arweave')
+      toast.error('Failed to save content to Arweave', { duration: 1000 })
       console.error('Save error:', error)
     } finally {
       setIsUploading(false)
@@ -304,7 +316,7 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
 
   const handleLoadFromArweave = async () => {
     if (!loadTransactionId.trim()) {
-      toast.error('Please enter a transaction ID')
+      toast.error('Please enter a transaction ID', { duration: 1000 })
       return
     }
 
@@ -324,7 +336,7 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
           } else {
             // If it's already the editor content, use it directly
             editor?.commands.setContent(parsedContent)
-            toast.success('Content loaded successfully!')
+            toast.success('Content loaded successfully!', { duration: 1000 })
           }
         } catch {
           // If not JSON, try to set as HTML
@@ -333,34 +345,73 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
         }
         setShowLoadModal(false)
         setLoadTransactionId('')
+        setShowMoreMenu(false)
       } else {
-        toast.error(`Load failed: ${result.error}`)
+        toast.error(`Load failed: ${result.error}`, { duration: 1000 })
       }
     } catch (error) {
-      toast.error('Failed to load content from Arweave')
+      toast.error('Failed to load content from Arweave', { duration: 1000 } )
       console.error('Load error:', error)
     } finally {
       setIsLoading(false)
     }
   }
 
+  const handleCopyShareLink = async () => {
+    try {
+      // Check if we're on a document page
+      const isDocumentPage = pathname?.startsWith('/document/')
+      if (isDocumentPage) {
+        const transactionId = pathname.split('/document/')[1]
+        if (transactionId) {
+          const origin = typeof window !== 'undefined' ? window.location.origin : ''
+          const shareUrl = `${origin}/document/${transactionId}`
+          await navigator.clipboard.writeText(shareUrl)
+          toast.success('Link copied to clipboard', { duration: 1000 })
+        }
+      } else {
+        // If not on document page, copy the editor content as JSON
+        if (editor) {
+          const content = editor.getJSON()
+          const contentString = JSON.stringify(content, null, 2)
+          await navigator.clipboard.writeText(contentString)
+          toast.success('Content copied to clipboard')
+        } else {
+          toast.error('Editor not ready', { duration: 1000 })
+        }
+      }
+    } catch (e) {
+      toast.error('Failed to copy', { duration: 1000 })
+    } finally {
+      setShowMoreMenu(false)
+    }
+  }
+
+  const handleMenuLoad = () => {
+    setShowLoadModal(true)
+  }
+
+  const handleMenuSave = () => {
+    handleSaveToArweave()
+  }
+
   const handleLoadFromVersion = (versionNumber: number) => {
     console.log('Loading version:', versionNumber)
 
     if (!currentDocument) {
-      toast.error('No current document found')
+      toast.error('No current document found', { duration: 1000 } )
       return
     }
 
     if (!editor) {
-      toast.error('Editor not ready. Please wait for the editor to load.')
+      toast.error('Editor not ready. Please wait for the editor to load.', { duration: 1000 } )
       return
     }
 
     // Check if version is password protected
     const version = currentDocument.versions.find(v => v.versionNumber === versionNumber)
     if (!version) {
-      toast.error(`Version ${versionNumber} not found`)
+      toast.error(`Version ${versionNumber} not found`, { duration: 1000 } )
       return
     }
 
@@ -374,14 +425,14 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
       if (storedContent) {
         loadVersionContent(storedContent, versionNumber)
       } else {
-        toast.error(`Version ${versionNumber} content not found in local storage`)
+        toast.error(`Version ${versionNumber} content not found in local storage`, { duration: 1000 } )
       }
     }
   }
 
   const handlePasswordPromptConfirm = (password: string) => {
     if (!promptVersionNumber || !currentDocument) {
-      toast.error('No version selected for decryption')
+      toast.error('No version selected for decryption', { duration: 1000 } )
       return
     }
 
@@ -409,23 +460,23 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
       if (parsedContent && typeof parsedContent === 'object' && parsedContent.data) {
         console.log('Setting content from data field:', parsedContent.data)
         editor.commands.setContent(parsedContent.data)
-        toast.success(`Version ${versionNumber} loaded successfully!`)
+        toast.success(`Version ${versionNumber} loaded successfully!`, { duration: 1000 })
       } else if (parsedContent && typeof parsedContent === 'object' && parsedContent.type === 'doc') {
         // If it's editor JSON format, use it directly
         console.log('Setting editor JSON content:', parsedContent)
         editor.commands.setContent(parsedContent)
-        toast.success(`Version ${versionNumber} loaded successfully!`)
+        toast.success(`Version ${versionNumber} loaded successfully!`, { duration: 1000 })
       } else {
         // If it's already the editor content, use it directly
         console.log('Setting content directly:', parsedContent)
         editor.commands.setContent(parsedContent)
-        toast.success(`Version ${versionNumber} loaded successfully!`)
+        toast.success(`Version ${versionNumber} loaded successfully!`, { duration: 1000 })
       }
     } catch (error) {
       console.log('Not JSON, setting as text:', content)
       // If not JSON, try to set as HTML or plain text
       editor.commands.setContent(content)
-      toast.success(`Version ${versionNumber} loaded successfully!`)
+      toast.success(`Version ${versionNumber} loaded successfully!`, { duration: 1000 })
     }
 
     // Update the current document to reflect the selected version
@@ -496,27 +547,27 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
           if (parsedContent && typeof parsedContent === 'object' && parsedContent.data) {
             console.log('Setting content from data field:', parsedContent.data)
             editor.commands.setContent(parsedContent.data)
-            toast.success('Document loaded successfully!')
+            toast.success('Document loaded successfully!', { duration: 1000 })
           } else if (parsedContent && typeof parsedContent === 'object' && parsedContent.type === 'doc') {
             // If it's editor JSON format, use it directly
             console.log('Setting editor JSON content:', parsedContent)
             editor.commands.setContent(parsedContent)
-            toast.success('Document loaded successfully!')
+            toast.success('Document loaded successfully!', { duration: 1000 })
           } else {
             // If it's already the editor content, use it directly
             console.log('Setting content directly:', parsedContent)
             editor.commands.setContent(parsedContent)
-            toast.success('Document loaded successfully!')
+            toast.success('Document loaded successfully!', { duration: 1000 })
           }
         } catch (error) {
           console.log('Not JSON, setting as text:', latestContent)
           // If not JSON, try to set as HTML or plain text
           editor.commands.setContent(latestContent)
-          toast.success('Document loaded successfully!')
+          toast.success('Document loaded successfully!', { duration: 1000 })
         }
       }, 200)
     } else {
-      toast.error('Document content not found in local storage')
+      toast.error('Document content not found in local storage', { duration: 1000 })
     }
 
     // Refresh the documents list to ensure we have the latest data
@@ -586,25 +637,59 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
           )} */}
         </div>
 
-        <div className="flex gap-2 items-center md:absolute z-[100] top-[4px] right-[4px]">
-          <Button
-            onClick={() => setShowLoadModal(true)}
-            variant="ghost"
-            className="gap-2 text-gray-600 hover:text-gray-900"
-            disabled={isLoading}
-          >
-            <Download className="w-4 h-4" />
-            Load
-          </Button>
-          <Button
-            onClick={handleSaveToArweave}
-            className="gap-2 bg-black hover:bg-black/90 text-white px-4"
-            disabled={isUploading || !editor}
-            title="Save"
-          >
-            <Save className="w-4 h-4" />
-            {isUploading ? 'Saving...' : 'Save'}
-          </Button>
+        <div className="flex gap-2 items-center md:absolute z-[100] top-[4px] right-[8px] ">
+          <DropdownMenu open={showMoreMenu} onOpenChange={setShowMoreMenu}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-gray-600 hover:text-gray-900"
+                title="More options"
+              >
+                <MoreVertical className="w-5 h-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              portal={true}
+              className="bg-gray-50 border border-gray-200 rounded-lg shadow-lg p-1 min-w-[160px]"
+            >
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault()
+                  handleMenuLoad()
+                  setShowMoreMenu(false)
+                }}
+                disabled={isLoading}
+                className="cursor-pointer flex items-center whitespace-nowrap px-3 py-2 rounded-md hover:bg-blue-50 hover:text-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span>Load</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault()
+                  handleCopyShareLink()
+                }}
+                className="cursor-pointer flex items-center whitespace-nowrap px-3 py-2 rounded-md hover:bg-green-50 hover:text-green-700 transition-colors"
+              >
+                <Copy className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span>Copy</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault()
+                  handleMenuSave()
+                  setShowMoreMenu(false)
+                }}
+                disabled={isUploading || !editor}
+                className="cursor-pointer flex items-center whitespace-nowrap px-3 py-2 rounded-md hover:bg-purple-50 hover:text-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Save className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span>{isUploading ? 'Saving...' : 'Save'}</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

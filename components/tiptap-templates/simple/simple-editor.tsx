@@ -196,6 +196,7 @@ export function SimpleEditor() {
   const editor = useEditor({
     immediatelyRender: false,
     shouldRerenderOnTransaction: false,
+    content: content,
     editorProps: {
       attributes: {
         autocomplete: "off",

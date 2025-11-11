@@ -58,6 +58,14 @@ export default function Sidebar({ isOpen, onClose, onLoadVersion, onLoadDocument
     const [activeTab, setActiveTab] = useState<"notes" | "documents">("documents")
 
     const filteredNotes = notes.filter((note) => note.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    const filteredDocuments = documents
+        .filter((doc) => (doc.title || "").toLowerCase().includes(searchQuery.toLowerCase()))
+        .sort((a, b) => {
+            if (sortOrder === "asc") {
+                return new Date(a.lastModified).getTime() - new Date(b.lastModified).getTime()
+            }
+            return new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime()
+        })
 
     // Initialize documents
     useEffect(() => {
@@ -118,7 +126,7 @@ export default function Sidebar({ isOpen, onClose, onLoadVersion, onLoadDocument
                 {/* Top Actions */}
                 <div className="p-4 border-b border-gray-200">
                     {/* Tab Navigation */}
-                    <div className="flex mb-4">
+                    {/* <div className="flex mb-4">
                         <button
                             onClick={() => setActiveTab("documents")}
                             className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === "documents"
@@ -137,12 +145,12 @@ export default function Sidebar({ isOpen, onClose, onLoadVersion, onLoadDocument
                         >
                             Notes
                         </button>
-                    </div>
+                    </div> */}
 
                     <div className="flex items-center gap-2 mb-4">
-                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="New note">
-                            <PencilIcon className="w-5 h-5 text-gray-700" />
-                        </button>
+                        {/* <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="New note">
+                                <PencilIcon className="w-5 h-5 text-gray-700" />
+                            </button> */}
                         <div className="flex-1 relative">
                             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <input
@@ -153,7 +161,7 @@ export default function Sidebar({ isOpen, onClose, onLoadVersion, onLoadDocument
                                 className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
-                        <button
+                        {/* <button
                             onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
                             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                             title="Sort"
@@ -162,7 +170,7 @@ export default function Sidebar({ isOpen, onClose, onLoadVersion, onLoadDocument
                         </button>
                         <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="View options">
                             <LayoutGridIcon className="w-5 h-5 text-gray-700" />
-                        </button>
+                        </button> */}
                     </div>
                 </div>
 
@@ -171,7 +179,7 @@ export default function Sidebar({ isOpen, onClose, onLoadVersion, onLoadDocument
                     <div className="p-4">
                         {activeTab === "documents" ? (
                             <>
-                                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Documents</h3>
+                                {/* <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Documents</h3> */}
 
                                 {/* Current Document */}
                                 {currentDocument && (
@@ -232,10 +240,10 @@ export default function Sidebar({ isOpen, onClose, onLoadVersion, onLoadDocument
                                 )}
 
                                 {/* All Documents */}
-                                {documents.length > 0 && (
+                                {filteredDocuments.length > 0 && (
                                     <div className="space-y-2">
                                         <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">All Documents</h4>
-                                        {documents.map((doc) => (
+                                        {filteredDocuments.map((doc) => (
                                             <div
                                                 key={doc.id}
                                                 className={`border rounded-lg p-3 cursor-pointer ${doc.id === currentDocument?.id
@@ -258,11 +266,17 @@ export default function Sidebar({ isOpen, onClose, onLoadVersion, onLoadDocument
                                     </div>
                                 )}
 
-                                {documents.length === 0 && (
+                                {(documents.length === 0 || filteredDocuments.length === 0) && (
                                     <div className="text-center text-gray-500 py-8">
                                         <Folder className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                                        <p className="text-sm">No documents yet</p>
-                                        <p className="text-xs">Upload content to create your first document</p>
+                                        {documents.length === 0 ? (
+                                            <>
+                                                <p className="text-sm">No documents yet</p>
+                                                <p className="text-xs">Upload content to create your first document</p>
+                                            </>
+                                        ) : (
+                                            <p className="text-sm">No documents match your search</p>
+                                        )}
                                     </div>
                                 )}
                             </>

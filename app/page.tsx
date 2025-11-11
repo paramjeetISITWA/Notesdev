@@ -3,8 +3,6 @@
 import { useState, useRef, useCallback } from "react";
 import Editor from "@/app/components/editor";
 import Sidebar from "@/app/components/sidebar";
-
-import TestimonialsSection from "@/components/testimonials-section";
 import PricingSection from "@/components/pricing-section";
 import FAQSection from "@/components/faq-section";
 import CTASection from "@/components/cta-section";
