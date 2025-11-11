@@ -19,7 +19,6 @@ import {
 import type { ButtonProps } from "@/components/tiptap-ui-primitive/button"
 import { Button } from "@/components/tiptap-ui-primitive/button"
 import { Badge } from "@/components/tiptap-ui-primitive/badge"
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/tiptap-ui-primitive/popover"
 import { Input, InputGroup } from "@/components/tiptap-ui-primitive/input"
 import { ButtonGroup } from "@/components/tiptap-ui-primitive/button"
 
@@ -124,53 +123,81 @@ export const ImageUploadButton = React.forwardRef<
     }
 
     return (
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            type="button"
-            data-style="ghost"
-            data-active-state={isActive ? "on" : "off"}
-            role="button"
-            tabIndex={-1}
-            disabled={!canInsert}
-            data-disabled={!canInsert}
-            aria-label={label}
-            aria-pressed={isActive}
-            tooltip={label}
-            onClick={handleButtonClick}
-            {...buttonProps}
-            ref={ref}
+      <>
+        <Button
+          type="button"
+          data-style="ghost"
+          data-active-state={isActive ? "on" : "off"}
+          role="button"
+          tabIndex={-1}
+          disabled={!canInsert}
+          data-disabled={!canInsert}
+          aria-label={label}
+          aria-pressed={isActive}
+          tooltip={label}
+          onClick={handleButtonClick}
+          {...buttonProps}
+          ref={ref}
+        >
+          {children ?? (
+            <>
+              <Icon className="tiptap-button-icon" />
+              {text && <span className="tiptap-button-text">{text}</span>}
+              {showShortcut && <ImageShortcutBadge shortcutKeys={shortcutKeys} />}
+            </>
+          )}
+        </Button>
+
+        {isOpen && (
+          <div
+            className="fixed inset-0 bg-black/30  flex items-center justify-center z-50"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setIsOpen(false)
+              }
+            }}
           >
-            {children ?? (
-              <>
-                <Icon className="tiptap-button-icon" />
-                {text && <span className="tiptap-button-text">{text}</span>}
-                {showShortcut && <ImageShortcutBadge shortcutKeys={shortcutKeys} />}
-              </>
-            )}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent>
-          <InputGroup>
-            <Input
-              type="url"
-              placeholder="Paste image link..."
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              onKeyDown={handleKeyDown}
-              autoFocus
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-            />
-          </InputGroup>
-          <ButtonGroup orientation="horizontal">
-            <Button type="button" data-style="ghost" onClick={insertFromUrl}>
-              Insert
-            </Button>
-          </ButtonGroup>
-        </PopoverContent>
-      </Popover>
+            <div
+              className="bg-white dark:bg-gray-800 rounded-lg p-6 w-[300px] h-[150px] flex flex-col shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex-1 flex flex-col justify-center gap-4">
+                <InputGroup>
+                  <Input
+                    type="url"
+                    placeholder="Paste image link..."
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    autoFocus
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    className=" h-8 border border-gray-200 rounded-md"
+                  />
+                </InputGroup>
+                <ButtonGroup orientation="horizontal">
+                  <Button
+                    type="button"
+                    data-style="ghost"
+                    onClick={() => setIsOpen(false)}
+                    
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    data-style="ghost"
+                    onClick={insertFromUrl}
+                  >
+                    Insert
+                  </Button>
+                </ButtonGroup>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
     )
   }
 )
