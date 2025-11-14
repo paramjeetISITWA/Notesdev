@@ -350,7 +350,7 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
         toast.error(`Load failed: ${result.error}`, { duration: 1000 })
       }
     } catch (error) {
-      toast.error('Failed to load content from Arweave', { duration: 1000 } )
+      toast.error('Failed to load content from Arweave', { duration: 1000 })
       console.error('Load error:', error)
     } finally {
       setIsLoading(false)
@@ -399,19 +399,19 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
     console.log('Loading version:', versionNumber)
 
     if (!currentDocument) {
-      toast.error('No current document found', { duration: 1000 } )
+      toast.error('No current document found', { duration: 1000 })
       return
     }
 
     if (!editor) {
-      toast.error('Editor not ready. Please wait for the editor to load.', { duration: 1000 } )
+      toast.error('Editor not ready. Please wait for the editor to load.', { duration: 1000 })
       return
     }
 
     // Check if version is password protected
     const version = currentDocument.versions.find(v => v.versionNumber === versionNumber)
     if (!version) {
-      toast.error(`Version ${versionNumber} not found`, { duration: 1000 } )
+      toast.error(`Version ${versionNumber} not found`, { duration: 1000 })
       return
     }
 
@@ -425,14 +425,14 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
       if (storedContent) {
         loadVersionContent(storedContent, versionNumber)
       } else {
-        toast.error(`Version ${versionNumber} content not found in local storage`, { duration: 1000 } )
+        toast.error(`Version ${versionNumber} content not found in local storage`, { duration: 1000 })
       }
     }
   }
 
   const handlePasswordPromptConfirm = (password: string) => {
     if (!promptVersionNumber || !currentDocument) {
-      toast.error('No version selected for decryption', { duration: 1000 } )
+      toast.error('No version selected for decryption', { duration: 1000 })
       return
     }
 
@@ -637,7 +637,18 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
           )} */}
         </div>
 
-        <div className="flex gap-2 items-center md:absolute z-[100] top-[4px] right-[8px] ">
+        <div className="flex gap-2 items-center md:absolute z-[100] top-[6px] right-[8px] ">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 border-blue-600 text-blue-600 hover:bg-blue-50 bg-transparent"
+            onClick={handleSaveToArweave}
+            disabled={isUploading || !editor}
+            title="Save to Arweave"
+          >
+            <Save className="w-4 h-4" />
+            {isUploading ? "Saving..." : "Save"}
+          </Button>
           <DropdownMenu open={showMoreMenu} onOpenChange={setShowMoreMenu}>
             <DropdownMenuTrigger asChild>
               <Button

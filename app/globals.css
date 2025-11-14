@@ -161,9 +161,11 @@
   background: #fff !important;
 }
 .notesbox .simple-editor-wrapper{
-  height: calc(100vh - 60px) !important;
+  height: 100vh !important;
   width: 615px !important;
   margin: 0 auto !important;
+  scrollbar-width: none;
+  scrollbar-color: transparent transparent;
 } 
 .notesbox .tiptap-toolbar *{
 color: #5b5b5b !important;
