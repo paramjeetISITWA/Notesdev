@@ -618,7 +618,7 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
             size="sm"
             className="text-gray-600 hover:text-gray-900 cursor-pointer"
             onClick={() => router.push('/')}
-            title="Show Documents"
+            title="Home"
           >
             <Home className="w-8 h-8 text-xl" />
           </Button>
