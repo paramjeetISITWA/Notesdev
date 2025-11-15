@@ -123,9 +123,10 @@
 }
 
 .notesbox {
-	position: relative;
+  position: relative;
 }
-.notesbox:after{
+
+.notesbox:after {
   content: '';
   position: absolute;
   top: 45px;
@@ -133,53 +134,65 @@
   width: 100%;
   height: 1px;
   z-index: 3;
-  background: #e1e3e1;;
+  background: #e1e3e1;
+  ;
 }
-.tiptap-popover{
-	box-shadow: 0px 0px 2px rgba(0,0,0,0.2)  !important;
-	border-radius: 10px  !important;
-	overflow: hidden !important;
+
+.tiptap-popover {
+  box-shadow: 0px 0px 2px rgba(0, 0, 0, 0.2) !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
   background-color: #fff !important;
 }
+
 /* .notesbox .simple-editor-wrapper .tiptap-toolbar > div:first-child{
   display: none;
 } */
-.tiptap-toolbar .tiptap-toolbar-group > div {
-	/* background: white; */
-  box-shadow: 0px 0px 2px rgba(0,0,0,0.2) 
+.tiptap-toolbar .tiptap-toolbar-group>div {
+  /* background: white; */
+  box-shadow: 0px 0px 2px rgba(0, 0, 0, 0.2)
 }
-.tiptap-toolbar .tiptap-toolbar-group > div * {
-	background: white;
+
+.tiptap-toolbar .tiptap-toolbar-group>div * {
+  background: white;
 }
-.tiptap-toolbar .tiptap-toolbar-group > div button {
-	background: white;
+
+.tiptap-toolbar .tiptap-toolbar-group>div button {
+  background: white;
 }
+
 .tiptap-button-group .tiptap-button {
-	background: #fff;
+  background: #fff;
 }
-.tiptap-button-group{
+
+.tiptap-button-group {
   background: #fff !important;
 }
-.notesbox .simple-editor-wrapper{
+
+.notesbox .simple-editor-wrapper {
   height: 100vh !important;
   width: 615px !important;
   margin: 0 auto !important;
   scrollbar-width: none;
   scrollbar-color: transparent transparent;
-} 
-.notesbox .tiptap-toolbar *{
-color: #5b5b5b !important;
-fill:#5b5b5b !important;
 }
-.notesbox .tiptap-toolbar .tiptap-toolbar-group > div button{
+
+.notesbox .tiptap-toolbar * {
   color: #5b5b5b !important;
-  fill:#5b5b5b !important;
+  fill: #5b5b5b !important;
 }
-.notesbox .tiptap-toolbar .tiptap-toolbar-group > div button:hover{
-  color: #000 !important;
-  fill:#000 !important;
+
+.notesbox .tiptap-toolbar .tiptap-toolbar-group>div button {
+  color: #5b5b5b !important;
+  fill: #5b5b5b !important;
 }
-.notesbox .tiptap-toolbar .tiptap-toolbar-group > div button:active{
+
+.notesbox .tiptap-toolbar .tiptap-toolbar-group>div button:hover {
   color: #000 !important;
-  fill:#000 !important;
+  fill: #000 !important;
+}
+
+.notesbox .tiptap-toolbar .tiptap-toolbar-group>div button:active {
+  color: #000 !important;
+  fill: #000 !important;
 }

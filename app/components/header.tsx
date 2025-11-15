@@ -21,13 +21,7 @@ export default function Header() {
           {/* Logo and Navigation */}
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-4">
-              {/* <button
-              onClick={onSidebarToggle}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Toggle Sidebar"
-            >
-              <Menu className="w-5 h-5 text-gray-700" />
-            </button> */}
+              
               <div className="flex items-center gap-2">
                 {/* Logo Icon */}
                 <div className="flex gap-1">
@@ -58,22 +52,6 @@ export default function Header() {
 
           {/* Right Side Buttons */}
           <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2 border-orange-500 text-orange-600 hover:bg-orange-50 bg-transparent"
-            >
-              <Heart className="w-4 h-4" />
-              Donate
-            </Button>
-            <Button
-              size="sm"
-              className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={handleNewNote}
-            >
-              <Plus className="w-4 h-4" />
-              New Note
-            </Button>
             <Button variant="outline" size="sm" className="gap-2 bg-transparent">
               <LogIn className="w-4 h-4" />
               Sign In

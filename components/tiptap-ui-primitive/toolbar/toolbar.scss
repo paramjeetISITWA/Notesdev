@@ -8,12 +8,43 @@
 .dark {
   --tt-toolbar-bg-color: var(--black);
   --tt-toolbar-border-color: var(--tt-gray-dark-a-50);
+
+  .tiptap-toolbar-scroll-indicator {
+    &-left {
+      background: linear-gradient(to right, var(--tt-toolbar-bg-color, var(--black)) 0%, transparent 100%);
+    }
+
+    &-right {
+      background: linear-gradient(to left, var(--tt-toolbar-bg-color, var(--black)) 0%, transparent 100%);
+    }
+  }
 }
 
 .tiptap-toolbar {
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  position: relative;
+
+  &-scroll-indicator {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 32px;
+    pointer-events: none;
+    z-index: 2;
+    transition: opacity 0.2s ease-in-out;
+
+    &-left {
+      left: 0;
+      background: linear-gradient(to right, var(--tt-toolbar-bg-color, var(--white)) 60%, transparent 100%);
+    }
+
+    &-right {
+      right: 0;
+      background: linear-gradient(to left, var(--tt-toolbar-bg-color, var(--white)) 60%, transparent 100%);
+    }
+  }
 
   &-group {
     display: flex;
@@ -38,7 +69,7 @@
     min-height: var(--tt-toolbar-height);
     background: var(--tt-toolbar-bg-color);
     border-bottom: 1px solid var(--tt-toolbar-border-color);
-    padding: 0 ;
+    padding: 0;
     overflow-x: auto;
     overscroll-behavior-x: contain;
     -webkit-overflow-scrolling: touch;

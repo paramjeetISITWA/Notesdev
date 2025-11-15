@@ -24,34 +24,18 @@ export default function Home() {
   };
 
   const handleLoadVersion = useCallback((versionNumber: number) => {
-    // This will be called from the sidebar when a version is clicked
-    // The editor will handle the actual loading
-    console.log("Page: handleLoadVersion called with:", versionNumber);
-    console.log("Page: editorRef.current:", editorRef.current);
     if (editorRef.current) {
-      console.log("Page: Calling editor.loadFromVersion");
       editorRef.current.loadFromVersion(versionNumber);
     } else {
-      console.log("Page: editorRef.current is null");
     }
   }, []);
 
   const handleLoadDocument = useCallback((documentId: string) => {
-    console.log("Page: handleLoadDocument called with:", documentId);
-    // This will be called from the sidebar when a document is clicked
-    // The editor will handle loading the latest version
     if (editorRef.current) {
-      console.log("Page: Calling editor.loadDocument");
       editorRef.current.loadDocument(documentId);
     } else {
-      console.log("Page: editorRef.current is null");
     }
   }, []);
-
-  console.log("Page: Functions defined:", {
-    handleLoadVersion: typeof handleLoadVersion,
-    handleLoadDocument: typeof handleLoadDocument,
-  });
 
   return (
     <>

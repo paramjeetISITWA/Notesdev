@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
     PencilIcon,
     SearchIcon,
@@ -40,9 +40,8 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onClose, onLoadVersion, onLoadDocument }: SidebarProps) {
-    console.log('Sidebar props received:', { isOpen, onClose: typeof onClose, onLoadVersion: typeof onLoadVersion, onLoadDocument: typeof onLoadDocument })
-
     const pathname = usePathname()
+    const router = useRouter()
     const [notes, setNotes] = useState<Note[]>([
         {
             id: "1",
@@ -76,27 +75,28 @@ export default function Sidebar({ isOpen, onClose, onLoadVersion, onLoadDocument
     }, [])
 
     const handleLoadVersion = (versionNumber: number) => {
-        console.log('Sidebar: handleLoadVersion called with:', versionNumber)
-        console.log('Sidebar: onLoadVersion type:', typeof onLoadVersion)
         if (onLoadVersion && typeof onLoadVersion === 'function') {
-            console.log('Sidebar: onLoadVersion called with:', versionNumber)
             onLoadVersion(versionNumber)
-        } else {
-            console.log('Sidebar: onLoadVersion is not a function or undefined')
         }
         onClose() // Close sidebar after loading
     }
 
     const handleLoadDocument = (documentId: string) => {
-        console.log('Sidebar: handleLoadDocument called with:', documentId)
-        console.log('Sidebar: onLoadDocument type:', typeof onLoadDocument)
-        if (onLoadDocument && typeof onLoadDocument === 'function') {
-            console.log('Sidebar: onLoadDocument called with:', documentId)
-            onLoadDocument(documentId)
+
+        // Find the document to get its transaction ID
+        const doc = documents.find(d => d.id === documentId)
+
+        if (doc && doc.arweaveTransactionId) {
+            // Redirect to document page with transaction ID
+            router.push(`/document/${doc.arweaveTransactionId}`)
+            onClose() // Close sidebar after redirect
         } else {
-            console.log('Sidebar: onLoadDocument is not a function or undefined')
+            // If no transaction ID, fall back to loading in editor
+            if (onLoadDocument && typeof onLoadDocument === 'function') {
+                onLoadDocument(documentId)
+            }
+            onClose() // Close sidebar after loading
         }
-        onClose() // Close sidebar after loading
     }
 
     return (

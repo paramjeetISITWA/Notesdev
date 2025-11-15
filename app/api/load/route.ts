@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Arweave from 'arweave';
+import { getDocumentFromRedis } from '@/lib/redis-utils';
 
 // Initialize Arweave instance (matching getdata.js)
 const arweave = Arweave.init({
@@ -30,9 +31,22 @@ export async function GET(request: NextRequest) {
     try {
         console.log(`Attempting to fetch data for transaction: ${transactionId}`);
 
-        // First, let's check if the transaction exists (like getdata.js)
-        // const txStatus = await arweave.transactions.getStatus(transactionId);
-        // console.log('Transaction status:', txStatus);
+        // First, check Redis for the document (since Arweave may not be published yet)
+        const redisDoc = await getDocumentFromRedis(transactionId);
+        if (redisDoc && redisDoc.content) {
+            console.log('Document found in Redis');
+            return NextResponse.json({
+                success: true,
+                content: redisDoc.content,
+                transactionId: transactionId,
+                arweaveUrl: `https://arweave.net/${transactionId}`,
+                fromRedis: true,
+                published: redisDoc.published
+            });
+        }
+
+        // If not in Redis, try to get from Arweave
+        console.log('Document not found in Redis, checking Arweave...');
 
         // Get transaction data (like getdata.js)
         const data = await arweave.transactions.getData(transactionId, {
@@ -40,13 +54,15 @@ export async function GET(request: NextRequest) {
             string: true
         });
 
-        console.log('Data retrieved successfully');
+        console.log('Data retrieved successfully from Arweave');
 
         return NextResponse.json({
             success: true,
             content: data as string,
             transactionId: transactionId,
-            arweaveUrl: `https://arweave.net/${transactionId}`
+            arweaveUrl: `https://arweave.net/${transactionId}`,
+            fromRedis: false,
+            published: true
         });
 
     } catch (error) {
@@ -65,12 +81,28 @@ export async function GET(request: NextRequest) {
                 success: true,
                 content: data as string,
                 transactionId: transactionId,
-                arweaveUrl: `https://arweave.net/${transactionId}`
+                arweaveUrl: `https://arweave.net/${transactionId}`,
+                fromRedis: false,
+                published: true
             });
 
         } catch (altError) {
             console.error('Alternative method also failed:', altError instanceof Error ? altError.message : 'Unknown error');
             console.log('The transaction may not exist or may not be accessible.');
+
+            // Final check: try Redis one more time (in case it was just saved)
+            const redisDoc = await getDocumentFromRedis(transactionId);
+            if (redisDoc && redisDoc.content) {
+                console.log('Document found in Redis on retry');
+                return NextResponse.json({
+                    success: true,
+                    content: redisDoc.content,
+                    transactionId: transactionId,
+                    arweaveUrl: `https://arweave.net/${transactionId}`,
+                    fromRedis: true,
+                    published: redisDoc.published
+                });
+            }
 
             return NextResponse.json(
                 {

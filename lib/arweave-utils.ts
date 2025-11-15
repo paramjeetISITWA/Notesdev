@@ -17,6 +17,8 @@ export interface LoadResult {
     content: string;
     success: boolean;
     error?: string;
+    fromRedis?: boolean;
+    published?: boolean;
 }
 
 export interface DocumentVersion {
@@ -168,6 +170,8 @@ export async function loadFromArweave(transactionId: string): Promise<LoadResult
         return {
             content: result.content,
             success: true,
+            fromRedis: result.fromRedis,
+            published: result.published,
         };
 
     } catch (error) {

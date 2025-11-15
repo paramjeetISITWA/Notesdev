@@ -76,6 +76,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { useWindowSize } from "@/hooks/use-window-size"
 import { useCursorVisibility } from "@/hooks/use-cursor-visibility"
 import { useEditorContext } from "@/hooks/use-editor-context"
+import { usePathname } from "next/navigation"
 
 
 // --- Lib ---
@@ -85,7 +86,7 @@ import { loadFromArweave } from "@/lib/arweave-utils"
 // --- Styles ---
 import "@/components/tiptap-templates/simple/simple-editor.scss"
 
-import content from "@/components/tiptap-templates/simple/data/content.json"
+// import content from "@/components/tiptap-templates/simple/data/content.json"
 
 const MainToolbarContent = ({
   onHighlighterClick,
@@ -205,15 +206,26 @@ export function SimpleEditor() {
   const isMobile = useIsMobile()
   const { height } = useWindowSize()
   const { setEditor } = useEditorContext()
+  const pathname = usePathname()
   const [mobileView, setMobileView] = React.useState<
     "main" | "highlighter" | "link"
   >("main")
   const toolbarRef = React.useRef<HTMLDivElement>(null)
-  const [initialContent, setInitialContent] = React.useState<any>(content)
+  const [initialContent, setInitialContent] = React.useState<any>("")
   const [isLoadingContent, setIsLoadingContent] = React.useState(false)
 
+  // Check if we're on a document page (content will be loaded from URL)
+  const isDocumentPage = pathname?.startsWith('/document/')
+
   // Load content from Arweave if TX ID is provided in env, otherwise use JSON
+  // Skip this if we're on a document page (content will be loaded from URL)
   React.useEffect(() => {
+    // Don't auto-load if we're on a document page - content will be loaded from URL
+    if (isDocumentPage) {
+      console.log('SimpleEditor: On document page, skipping auto-load')
+      return
+    }
+
     const loadContent = async () => {
       const txId = process.env.NEXT_PUBLIC_ARWEAVE_TX_ID
 
@@ -262,15 +274,15 @@ export function SimpleEditor() {
             } catch (parseError) {
               // If not JSON, might be plain text or different format
               console.warn('Content from Arweave is not valid JSON, using fallback:', parseError)
-              setInitialContent(content)
+              setInitialContent("")
             }
           } else {
             console.warn('Failed to load from Arweave, using fallback:', result.error)
-            setInitialContent(content)
+            setInitialContent("")
           }
         } catch (error) {
           console.error('Error loading from Arweave, using fallback:', error)
-          setInitialContent(content)
+          setInitialContent("")
         } finally {
           setIsLoadingContent(false)
         }
@@ -281,7 +293,7 @@ export function SimpleEditor() {
     }
 
     loadContent()
-  }, [])
+  }, [isDocumentPage])
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -1204,12 +1216,14 @@ export function SimpleEditor() {
       <div className="simple-editor-wrapper">
         <div style={{
           display: 'flex',
+          flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
           height: '100%',
           padding: '2rem'
         }}>
-          <p>Loading content...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-gray-300 border-t-blue-600 mb-4"></div>
+          {/* <p className="text-gray-600 animate-pulse">Loading content...</p> */}
         </div>
       </div>
     )

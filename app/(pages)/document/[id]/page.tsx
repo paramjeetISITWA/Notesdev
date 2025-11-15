@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Editor from "@/app/components/editor"
 import Sidebar from "@/app/components/sidebar"
-import Header from "@/app/components/header"
 import { useEditorContext } from '@/hooks/use-editor-context'
 import { loadFromArweave } from '@/lib/arweave-utils'
 import toast from "react-hot-toast"
@@ -24,6 +23,8 @@ export default function DocumentPage() {
     const [showPasswordPrompt, setShowPasswordPrompt] = useState(false)
     const [encryptedContent, setEncryptedContent] = useState<string | null>(null)
     const [loadedContent, setLoadedContent] = useState<string | null>(null)
+    const [dataSource, setDataSource] = useState<'api' | 'redis' | 'localStorage' | null>(null)
+    const hasLoadedFromUrl = useRef(false)
 
     const toggleEditorSidebar = useCallback(() => {
         setIsEditorSidebarOpen(!isEditorSidebarOpen)
@@ -34,17 +35,13 @@ export default function DocumentPage() {
     }
 
     const handleLoadVersion = useCallback((versionNumber: number) => {
-        console.log("Page: handleLoadVersion called with:", versionNumber)
         if (editorRef.current) {
-            console.log("Page: Calling editor.loadFromVersion")
             editorRef.current.loadFromVersion(versionNumber)
         }
     }, [])
 
     const handleLoadDocument = useCallback((documentId: string) => {
-        console.log("Page: handleLoadDocument called with:", documentId)
         if (editorRef.current) {
-            console.log("Page: Calling editor.loadDocument")
             editorRef.current.loadDocument(documentId)
         }
     }, [])
@@ -57,18 +54,30 @@ export default function DocumentPage() {
                 return
             }
 
+            // Reset the flag when loading a new document
+            hasLoadedFromUrl.current = false
             setIsLoading(true)
             setError(null)
 
             try {
                 const result = await loadFromArweave(transactionId)
-                console.log('Load document result:', result)
 
                 if (result.success) {
+                    // Track data source: API (Arweave) = green, Redis = not green, localStorage = not green
+                    if (result.fromRedis === false) {
+                        // Loaded from Arweave API (not Redis)
+                        setDataSource('api')
+                    } else if (result.fromRedis === true) {
+                        // Loaded from Redis
+                        setDataSource('redis')
+                    } else {
+                        // Fallback to api if not specified
+                        setDataSource('api')
+                    }
+
                     // Check if content is encrypted
                     try {
                         const parsedContent = JSON.parse(result.content)
-                        console.log('Parsed content:', parsedContent)
 
                         // Check if it's password protected (new format)
                         if (parsedContent && parsedContent.password === 1) {
@@ -84,7 +93,23 @@ export default function DocumentPage() {
                     } catch {
                         // If not JSON, try to load as plain text/HTML
                         setLoadedContent(result.content)
-                        console.log('Load document content:', result.content)
+                    }
+
+                    // If loaded from Redis (not yet published), check publish status in background
+                    if (result.fromRedis && !result.published) {
+                        // Check publish status after a delay
+                        setTimeout(async () => {
+                            try {
+                                const checkResponse = await fetch(`/api/check-publish?transactionId=${transactionId}`)
+                                const checkResult = await checkResponse.json()
+                                if (checkResult.published) {
+                                    // Update data source to API when published
+                                    setDataSource('api')
+                                }
+                            } catch (error) {
+                                console.error('Error checking publish status:', error)
+                            }
+                        }, 5000) // Check after 5 seconds
                     }
                 } else {
                     setError(result.error || 'Failed to load document')
@@ -94,7 +119,6 @@ export default function DocumentPage() {
                 const errorMessage = error instanceof Error ? error.message : 'Failed to load document'
                 setError(errorMessage)
                 toast.error('Failed to load content from Arweave')
-                console.error('Load error:', error)
             } finally {
                 setIsLoading(false)
             }
@@ -105,11 +129,12 @@ export default function DocumentPage() {
 
     // Load content into editor when both editor and content are ready
     useEffect(() => {
-        if (!editor || !loadedContent) return
+        if (!editor || !loadedContent || hasLoadedFromUrl.current) return
 
         // Add a small delay to ensure editor is fully ready (same as main page)
         const timer = setTimeout(() => {
             loadContentToEditor(loadedContent)
+            hasLoadedFromUrl.current = true
         }, 200)
 
         return () => clearTimeout(timer)
@@ -121,28 +146,23 @@ export default function DocumentPage() {
         try {
             // Try to parse as JSON first
             const parsedContent = JSON.parse(content)
-            console.log('Parsed content:', parsedContent)
 
             // If it's an object with a 'data' field, extract just the data
             if (parsedContent && typeof parsedContent === 'object' && parsedContent.data) {
-                console.log('Setting content from data field:', parsedContent.data)
                 editor.commands.setContent(parsedContent.data)
                 toast.success('Content loaded successfully!')
             } else if (parsedContent && typeof parsedContent === 'object' && parsedContent.type === 'doc') {
                 // If it's editor JSON format, use it directly
-                console.log('Setting editor JSON content:', parsedContent)
                 editor.commands.setContent(parsedContent)
                 toast.success('Content loaded successfully!')
             } else {
                 // Check if it has metadata fields to strip
                 if (parsedContent && typeof parsedContent === 'object' && parsedContent.password !== undefined) {
                     const { password: _p, passwordProtected: _pp, timestamp: _t, previousTransactionId: _ptx, ...cleanContent } = parsedContent
-                    console.log('Setting content after stripping metadata:', cleanContent)
                     editor.commands.setContent(cleanContent as any)
                     toast.success('Content loaded successfully!')
                 } else {
                     // If it's already the editor content, use it directly
-                    console.log('Setting content directly:', parsedContent)
                     editor.commands.setContent(parsedContent)
                     toast.success('Content loaded successfully!')
                 }
@@ -150,7 +170,6 @@ export default function DocumentPage() {
             // Clear loaded content after successful load
             setLoadedContent(null)
         } catch (error) {
-            console.log('Not JSON, setting as text:', content)
             // If not JSON, try to set as HTML or plain text
             editor.commands.setContent(content)
             toast.success('Content loaded successfully!')
@@ -199,7 +218,6 @@ export default function DocumentPage() {
             }
         } catch (error) {
             toast.error('Failed to decrypt content. Please check your password.')
-            console.error('Decryption error:', error)
         }
     }
 
@@ -208,8 +226,8 @@ export default function DocumentPage() {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading document from Arweave...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-2 border-gray-300 border-t-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600 animate-pulse">Loading document from Arweave...</p>
                 </div>
             </div>
         )
@@ -236,13 +254,16 @@ export default function DocumentPage() {
     return (
         <>
             <div className="block">
+
                 <Editor
                     ref={editorRef}
                     content={content}
                     setContent={setContent}
                     onSidebarToggle={toggleEditorSidebar}
+                    dataSource={dataSource}
+                    transactionId={transactionId}
                 />
-                <Header />
+                {/* <Header /> */}
             </div>
             {handleLoadVersion && handleLoadDocument && (
                 <Sidebar

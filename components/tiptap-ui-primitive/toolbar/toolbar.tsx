@@ -85,6 +85,53 @@ export const Toolbar = React.forwardRef<HTMLDivElement, ToolbarProps>(
     const composedRef = useComposedRef(toolbarRef, ref)
     useToolbarNavigation(toolbarRef)
 
+    const [showLeftIndicator, setShowLeftIndicator] = React.useState(false)
+    const [showRightIndicator, setShowRightIndicator] = React.useState(false)
+
+    const checkScrollIndicators = React.useCallback(() => {
+      const toolbar = toolbarRef.current
+      if (!toolbar) return
+
+      const { scrollLeft, scrollWidth, clientWidth } = toolbar
+      const canScroll = scrollWidth > clientWidth
+      setShowLeftIndicator(canScroll && scrollLeft > 1)
+      setShowRightIndicator(canScroll && scrollLeft < scrollWidth - clientWidth - 1)
+    }, [])
+
+    React.useEffect(() => {
+      const toolbar = toolbarRef.current
+      if (!toolbar) return
+
+      // Initial check with a small delay to ensure DOM is ready
+      const timeoutId = setTimeout(() => {
+        checkScrollIndicators()
+      }, 100)
+
+      const handleScroll = () => {
+        checkScrollIndicators()
+      }
+
+      const resizeObserver = new ResizeObserver(() => {
+        // Small delay to ensure layout is complete
+        setTimeout(() => {
+          checkScrollIndicators()
+        }, 10)
+      })
+
+      toolbar.addEventListener('scroll', handleScroll, { passive: true })
+      resizeObserver.observe(toolbar)
+
+      // Check on window resize
+      window.addEventListener('resize', checkScrollIndicators)
+
+      return () => {
+        clearTimeout(timeoutId)
+        toolbar.removeEventListener('scroll', handleScroll)
+        resizeObserver.disconnect()
+        window.removeEventListener('resize', checkScrollIndicators)
+      }
+    }, [checkScrollIndicators])
+
     return (
       <div
         ref={composedRef}
@@ -94,7 +141,13 @@ export const Toolbar = React.forwardRef<HTMLDivElement, ToolbarProps>(
         className={cn("tiptap-toolbar", className)}
         {...props}
       >
+        {showLeftIndicator && (
+          <div className="tiptap-toolbar-scroll-indicator tiptap-toolbar-scroll-indicator-left" />
+        )}
         {children}
+        {showRightIndicator && (
+          <div className="tiptap-toolbar-scroll-indicator tiptap-toolbar-scroll-indicator-right" />
+        )}
       </div>
     )
   }

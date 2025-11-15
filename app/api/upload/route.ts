@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Keypair, Connection } from '@solana/web3.js';
 import Bundlr from '@bundlr-network/client';
 import bs58 from 'bs58';
+import { saveDocumentToRedis, saveUserTransactionIds } from '@/lib/redis-utils';
 
 export async function POST(request: NextRequest) {
     try {
@@ -82,12 +83,33 @@ export async function POST(request: NextRequest) {
 
         console.log('File uploaded successfully!');
         console.log('Arweave URL: https://arweave.net/' + transaction.id);
-       console.log('Transaction:', transaction);
+        console.log('Transaction:', transaction);
+
+        const walletAddress = solanaWallet.publicKey.toBase58();
+        const txId = transaction.id;
+
+        // Save document to Redis immediately (before Arweave publishes)
+        try {
+            await saveDocumentToRedis(txId, content, {
+                documentId: documentId,
+                walletAddress: walletAddress,
+                timestamp: new Date().toISOString(),
+            });
+
+            // Save transaction ID to user's transaction list
+            await saveUserTransactionIds(walletAddress, txId);
+
+            console.log('Document saved to Redis with transaction ID:', txId);
+        } catch (redisError) {
+            console.error('Error saving to Redis (non-fatal):', redisError);
+            // Continue even if Redis fails - Arweave upload was successful
+        }
+
         return NextResponse.json({
             success: true,
-            transactionId: transaction.id,
-            arweaveUrl: `https://arweave.net/${transaction.id}`,
-            walletAddress: solanaWallet.publicKey.toBase58(),
+            transactionId: txId,
+            arweaveUrl: `https://arweave.net/${txId}`,
+            walletAddress: walletAddress,
             balance: solBalance
         });
 

@@ -2,272 +2,913 @@
   "type": "doc",
   "content": [
     {
-      "type": "heading",
+      "type": "div",
       "attrs": {
-        "textAlign": null,
-        "level": 1
+        "style": "max-width:800px;margin:0 auto;padding:40px 20px",
+        "class": null
       },
       "content": [
         {
-          "type": "text",
-          "text": "Welcome to OpenBun Notes"
-        }
-      ]
-    },
-    {
-      "type": "paragraph",
-      "attrs": {
-        "textAlign": null
-      },
-      "content": [
-        {
-          "type": "text",
-          "text": "OpenBun Notes is a modern, fast, and intuitive note-taking application designed to help you capture, organize, and share your thoughts effortlessly. Built with "
-        },
-        {
-          "type": "text",
-          "marks": [
-            {
-              "type": "bold"
-            }
-          ],
-          "text": "Tiptap"
-        },
-        {
-          "type": "text",
-          "text": " and powered by "
-        },
-        {
-          "type": "text",
-          "marks": [
-            {
-              "type": "bold"
-            }
-          ],
-          "text": "Arweave"
-        },
-        {
-          "type": "text",
-          "text": " for decentralized storage."
-        }
-      ]
-    },
-    {
-      "type": "heading",
-      "attrs": {
-        "textAlign": null,
-        "level": 2
-      },
-      "content": [
-        {
-          "type": "text",
-          "text": "Key Features"
-        }
-      ]
-    },
-    {
-      "type": "bulletList",
-      "content": [
-        {
-          "type": "listItem",
-          "content": [
-            {
-              "type": "paragraph",
-              "attrs": {
-                "textAlign": "left"
-              },
-              "content": [
-                {
-                  "type": "text",
-                  "marks": [
-                    {
-                      "type": "bold"
-                    }
-                  ],
-                  "text": "Rich Text Editing"
-                },
-                {
-                  "type": "text",
-                  "text": ": Full-featured editor with markdown support, formatting options, and keyboard shortcuts (⌘+B for bold, ⌘+I for italic)."
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "listItem",
-          "content": [
-            {
-              "type": "paragraph",
-              "attrs": {
-                "textAlign": "left"
-              },
-              "content": [
-                {
-                  "type": "text",
-                  "marks": [
-                    {
-                      "type": "bold"
-                    }
-                  ],
-                  "text": "Decentralized Storage"
-                },
-                {
-                  "type": "text",
-                  "text": ": Your notes are stored on Arweave blockchain, ensuring permanent and secure storage."
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "listItem",
-          "content": [
-            {
-              "type": "paragraph",
-              "attrs": {
-                "textAlign": "left"
-              },
-              "content": [
-                {
-                  "type": "text",
-                  "marks": [
-                    {
-                      "type": "bold"
-                    }
-                  ],
-                  "text": "Document Versioning"
-                },
-                {
-                  "type": "text",
-                  "text": ": Track changes and access previous versions of your documents with full version history."
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "listItem",
-          "content": [
-            {
-              "type": "paragraph",
-              "attrs": {
-                "textAlign": "left"
-              },
-              "content": [
-                {
-                  "type": "text",
-                  "marks": [
-                    {
-                      "type": "bold"
-                    }
-                  ],
-                  "text": "Password Protection"
-                },
-                {
-                  "type": "text",
-                  "text": ": Secure your sensitive notes with optional password protection for enhanced privacy."
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "listItem",
-          "content": [
-            {
-              "type": "paragraph",
-              "attrs": {
-                "textAlign": "left"
-              },
-              "content": [
-                {
-                  "type": "text",
-                  "marks": [
-                    {
-                      "type": "bold"
-                    }
-                  ],
-                  "text": "Image Support"
-                },
-                {
-                  "type": "text",
-                  "text": ": Upload and embed images directly into your notes for richer content."
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "listItem",
-          "content": [
-            {
-              "type": "paragraph",
-              "attrs": {
-                "textAlign": "left"
-              },
-              "content": [
-                {
-                  "type": "text",
-                  "marks": [
-                    {
-                      "type": "bold"
-                    }
-                  ],
-                  "text": "Solana Wallet Integration"
-                },
-                {
-                  "type": "text",
-                  "text": ": Seamlessly connect with your Solana wallet for blockchain-powered features."
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "heading",
-      "attrs": {
-        "textAlign": null,
-        "level": 2
-      },
-      "content": [
-        {
-          "type": "text",
-          "text": "Getting Started"
-        }
-      ]
-    },
-    {
-      "type": "paragraph",
-      "attrs": {
-        "textAlign": null
-      },
-      "content": [
-        {
-          "type": "text",
-          "text": "Start typing to create your first note! Use the toolbar above to format your text, add headings, lists, and more. Your notes are automatically saved and stored securely on Arweave."
-        }
-      ]
-    },
-    {
-      "type": "blockquote",
-      "content": [
-        {
-          "type": "paragraph",
+          "type": "div",
           "attrs": {
-            "textAlign": null
+            "style": "background:white;border-radius:12px;padding:40px;margin-bottom:30px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:5px solid #6366f1",
+            "class": null
           },
           "content": [
             {
-              "type": "text",
-              "marks": [
+              "type": "heading",
+              "attrs": {
+                "textAlign": null,
+                "level": 1,
+                "style": "font-size:32px;font-weight:700;margin:0 0 15px;color:#1f2937;background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text",
+                "class": null
+              },
+              "content": [
                 {
-                  "type": "italic"
+                  "type": "text",
+                  "marks": [
+                    {
+                      "type": "bold"
+                    }
+                  ],
+                  "text": " Getting Started"
                 }
-              ],
-              "text": "Tip: Use the sidebar to manage multiple documents and access version history. Click the menu icon to open the document manager."
+              ]
+            },
+            {
+              "type": "paragraph",
+              "attrs": {
+                "textAlign": null,
+                "style": "margin:0;font-size:15px;line-height:1.7;color:#4b5563",
+                "class": null
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Welcome to "
+                },
+                {
+                  "type": "span",
+                  "attrs": {
+                    "style": "color:#6366f1;font-weight:600",
+                    "class": null
+                  },
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "OpenBun Notes"
+                    }
+                  ],
+                  "marks": [
+                    {
+                      "type": "bold"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": " — a modern, fast, and intuitive note-taking application designed to help you capture, organize, and share your thoughts effortlessly. Built with "
+                },
+                {
+                  "type": "span",
+                  "attrs": {
+                    "style": "color:#8b5cf6;font-weight:600",
+                    "class": null
+                  },
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Tiptap"
+                    }
+                  ],
+                  "marks": [
+                    {
+                      "type": "bold"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": " and powered by "
+                },
+                {
+                  "type": "span",
+                  "attrs": {
+                    "style": "color:#6366f1;font-weight:600",
+                    "class": null
+                  },
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Arweave"
+                    }
+                  ],
+                  "marks": [
+                    {
+                      "type": "bold"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": " for decentralized, permanent storage."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "div",
+          "attrs": {
+            "style": "background:white;border-radius:12px;padding:30px;margin-bottom:30px;box-shadow:0 4px 6px rgba(0,0,0,0.07)",
+            "class": null
+          },
+          "content": [
+            {
+              "type": "paragraph",
+              "attrs": {
+                "textAlign": null,
+                "style": "font-size:14px;color:#6b7280;margin:0 0 12px",
+                "class": null
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Integrate it by using the "
+                },
+                {
+                  "type": "span",
+                  "attrs": {
+                    "style": "color:#3b82f6;text-decoration:underline;cursor:pointer",
+                    "class": null
+                  },
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Tiptap UI Components docs"
+                    }
+                  ],
+                  "marks": [
+                    {
+                      "type": "underline"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "text": " or our CLI tool."
+                }
+              ]
+            },
+            {
+              "type": "div",
+              "attrs": {
+                "style": "background:#f3f4f6;border-radius:8px;padding:15px;font-family:'Courier New',monospace;font-size:13px;color:#374151;border-left:3px solid #10b981",
+                "class": null
+              },
+              "content": [
+                {
+                  "type": "paragraph",
+                  "attrs": {
+                    "textAlign": null,
+                    "style": null,
+                    "class": null
+                  },
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": " npx @tiptap/cli init"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "div",
+          "attrs": {
+            "style": "background:white;border-radius:12px;padding:40px;margin-bottom:30px;box-shadow:0 4px 6px rgba(0,0,0,0.07)",
+            "class": null
+          },
+          "content": [
+            {
+              "type": "heading",
+              "attrs": {
+                "textAlign": null,
+                "level": 2,
+                "style": "font-size:24px;font-weight:700;margin:0 0 25px;color:#1f2937",
+                "class": null
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "marks": [
+                    {
+                      "type": "bold"
+                    }
+                  ],
+                  "text": "Key Features"
+                }
+              ]
+            },
+            {
+              "type": "div",
+              "attrs": {
+                "style": "border-left:4px solid #6366f1;padding-left:20px;margin-bottom:25px",
+                "class": null
+              },
+              "content": [
+                {
+                  "type": "paragraph",
+                  "attrs": {
+                    "textAlign": null,
+                    "style": "margin:0;font-size:15px;color:#374151;line-height:1.7;font-weight:500",
+                    "class": null
+                  },
+                  "content": [
+                    {
+                      "type": "text",
+                      "marks": [
+                        {
+                          "type": "bold"
+                        }
+                      ],
+                      "text": "A fully responsive rich text editor with built-in support for formatting, markdown, keyboard shortcuts "
+                    },
+                    {
+                      "type": "span",
+                      "attrs": {
+                        "style": "background:#eef2ff;padding:2px 6px;border-radius:4px;color:#6366f1;font-family:monospace",
+                        "class": null
+                      },
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "(⌘+B, ⌘+I)"
+                        }
+                      ],
+                      "marks": [
+                        {
+                          "type": "bold"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "marks": [
+                        {
+                          "type": "bold"
+                        }
+                      ],
+                      "text": ", and advanced customization to make your writing more engaging and professional."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "bulletList",
+              "attrs": {
+                "style": "margin:0;padding-left:20px;color:#4b5563;font-size:14px;line-height:2",
+                "class": null
+              },
+              "content": [
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "style": "margin-bottom:8px",
+                    "class": null
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "textAlign": null,
+                        "style": null,
+                        "class": null
+                      },
+                      "content": [
+                        {
+                          "type": "span",
+                          "attrs": {
+                            "style": "color:#10b981;font-weight:600",
+                            "class": null
+                          },
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "✓ Rich Text Editing"
+                            }
+                          ],
+                          "marks": [
+                            {
+                              "type": "bold"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "text": " — Full markdown support with formatting tools"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "style": "margin-bottom:8px",
+                    "class": null
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "textAlign": null,
+                        "style": null,
+                        "class": null
+                      },
+                      "content": [
+                        {
+                          "type": "span",
+                          "attrs": {
+                            "style": "color:#10b981;font-weight:600",
+                            "class": null
+                          },
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "✓ Decentralized Storage"
+                            }
+                          ],
+                          "marks": [
+                            {
+                              "type": "bold"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "text": " — Permanent storage on Arweave blockchain"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "style": "margin-bottom:8px",
+                    "class": null
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "textAlign": null,
+                        "style": null,
+                        "class": null
+                      },
+                      "content": [
+                        {
+                          "type": "span",
+                          "attrs": {
+                            "style": "color:#10b981;font-weight:600",
+                            "class": null
+                          },
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "✓ Document Versioning"
+                            }
+                          ],
+                          "marks": [
+                            {
+                              "type": "bold"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "text": " — Track changes with full version history"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "style": "margin-bottom:8px",
+                    "class": null
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "textAlign": null,
+                        "style": null,
+                        "class": null
+                      },
+                      "content": [
+                        {
+                          "type": "span",
+                          "attrs": {
+                            "style": "color:#10b981;font-weight:600",
+                            "class": null
+                          },
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "✓ Password Protection"
+                            }
+                          ],
+                          "marks": [
+                            {
+                              "type": "bold"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "text": " — Secure your sensitive notes"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "style": "margin-bottom:8px",
+                    "class": null
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "textAlign": null,
+                        "style": null,
+                        "class": null
+                      },
+                      "content": [
+                        {
+                          "type": "span",
+                          "attrs": {
+                            "style": "color:#10b981;font-weight:600",
+                            "class": null
+                          },
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "✓ Image Support"
+                            }
+                          ],
+                          "marks": [
+                            {
+                              "type": "bold"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "text": " — Upload and embed images directly"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "attrs": {
+                    "style": null,
+                    "class": null
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "textAlign": null,
+                        "style": null,
+                        "class": null
+                      },
+                      "content": [
+                        {
+                          "type": "span",
+                          "attrs": {
+                            "style": "color:#10b981;font-weight:600",
+                            "class": null
+                          },
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "✓ Solana Integration"
+                            }
+                          ],
+                          "marks": [
+                            {
+                              "type": "bold"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "text": " — Connect with your Solana wallet seamlessly"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "div",
+          "attrs": {
+            "style": "margin-bottom:30px;border-radius:12px;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,0.1)",
+            "class": null
+          },
+          "content": [
+            {
+              "type": "image",
+              "attrs": {
+                "src": "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&h=400&fit=crop",
+                "alt": "Arweave Decentralized Storage",
+                "title": null,
+                "width": null,
+                "height": null,
+                "style": "width:100%;height:auto;display:block;border-radius:12px",
+                "class": null
+              }
+            }
+          ]
+        },
+        {
+          "type": "div",
+          "attrs": {
+            "style": "background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:12px;padding:40px;margin-bottom:30px;box-shadow:0 10px 30px rgba(102,126,234,0.3)",
+            "class": null
+          },
+          "content": [
+            {
+              "type": "heading",
+              "attrs": {
+                "textAlign": null,
+                "level": 2,
+                "style": "font-size:24px;font-weight:700;margin:0 0 20px;color:white",
+                "class": null
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "marks": [
+                    {
+                      "type": "bold"
+                    }
+                  ],
+                  "text": "How Data Gets Published on Arweave "
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "attrs": {
+                "textAlign": null,
+                "style": "margin:0 0 20px;font-size:15px;color:rgba(255,255,255,0.95);line-height:1.8",
+                "class": null
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "When you save a note in OpenBun Notes, it is securely uploaded to the Arweave network through Bundlr. Arweave ensures your data is stored permanently, censorship-resistant, and distributed globally across thousands of nodes for maximum availability and security."
+                }
+              ]
+            },
+            {
+              "type": "div",
+              "attrs": {
+                "style": "background:rgba(255,255,255,0.1);border-radius:8px;padding:20px;backdrop-filter:blur(10px)",
+                "class": null
+              },
+              "content": [
+                {
+                  "type": "div",
+                  "attrs": {
+                    "style": "display:flex;align-items:flex-start;margin-bottom:15px",
+                    "class": null
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "textAlign": null,
+                        "style": null,
+                        "class": null
+                      },
+                      "content": [
+                        {
+                          "type": "span",
+                          "attrs": {
+                            "style": "color:#fbbf24;font-size:20px;margin-right:12px;font-weight:bold",
+                            "class": null
+                          },
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "→"
+                            }
+                          ],
+                          "marks": [
+                            {
+                              "type": "bold"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "div",
+                      "attrs": {
+                        "style": null,
+                        "class": null
+                      },
+                      "content": [
+                        {
+                          "type": "heading",
+                          "attrs": {
+                            "textAlign": null,
+                            "level": 3,
+                            "style": "margin:0 0 5px;color:white;font-size:14px;font-weight:600",
+                            "class": null
+                          },
+                          "content": [
+                            {
+                              "type": "text",
+                              "marks": [
+                                {
+                                  "type": "bold"
+                                }
+                              ],
+                              "text": "Instant Upload"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "paragraph",
+                          "attrs": {
+                            "textAlign": null,
+                            "style": "margin:0;color:rgba(255,255,255,0.8);font-size:13px",
+                            "class": null
+                          },
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Your note is encrypted and uploaded to Arweave's permaweb instantly."
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "div",
+                  "attrs": {
+                    "style": "display:flex;align-items:flex-start;margin-bottom:15px",
+                    "class": null
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "textAlign": null,
+                        "style": null,
+                        "class": null
+                      },
+                      "content": [
+                        {
+                          "type": "span",
+                          "attrs": {
+                            "style": "color:#fbbf24;font-size:20px;margin-right:12px;font-weight:bold",
+                            "class": null
+                          },
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "→"
+                            }
+                          ],
+                          "marks": [
+                            {
+                              "type": "bold"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "div",
+                      "attrs": {
+                        "style": null,
+                        "class": null
+                      },
+                      "content": [
+                        {
+                          "type": "heading",
+                          "attrs": {
+                            "textAlign": null,
+                            "level": 3,
+                            "style": "margin:0 0 5px;color:white;font-size:14px;font-weight:600",
+                            "class": null
+                          },
+                          "content": [
+                            {
+                              "type": "text",
+                              "marks": [
+                                {
+                                  "type": "bold"
+                                }
+                              ],
+                              "text": "Global Replication"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "paragraph",
+                          "attrs": {
+                            "textAlign": null,
+                            "style": "margin:0;color:rgba(255,255,255,0.8);font-size:13px",
+                            "class": null
+                          },
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Data is replicated across distributed nodes worldwide for 99.99% uptime."
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "div",
+                  "attrs": {
+                    "style": "display:flex;align-items:flex-start",
+                    "class": null
+                  },
+                  "content": [
+                    {
+                      "type": "paragraph",
+                      "attrs": {
+                        "textAlign": null,
+                        "style": null,
+                        "class": null
+                      },
+                      "content": [
+                        {
+                          "type": "span",
+                          "attrs": {
+                            "style": "color:#fbbf24;font-size:20px;margin-right:12px;font-weight:bold",
+                            "class": null
+                          },
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "→"
+                            }
+                          ],
+                          "marks": [
+                            {
+                              "type": "bold"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "div",
+                      "attrs": {
+                        "style": null,
+                        "class": null
+                      },
+                      "content": [
+                        {
+                          "type": "heading",
+                          "attrs": {
+                            "textAlign": null,
+                            "level": 3,
+                            "style": "margin:0 0 5px;color:white;font-size:14px;font-weight:600",
+                            "class": null
+                          },
+                          "content": [
+                            {
+                              "type": "text",
+                              "marks": [
+                                {
+                                  "type": "bold"
+                                }
+                              ],
+                              "text": "Permanent Access"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "paragraph",
+                          "attrs": {
+                            "textAlign": null,
+                            "style": "margin:0;color:rgba(255,255,255,0.8);font-size:13px",
+                            "class": null
+                          },
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Within seconds to minutes, your note becomes accessible worldwide using a unique Transaction ID."
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "div",
+          "attrs": {
+            "style": "background:white;border-radius:12px;padding:40px;text-align:center;box-shadow:0 4px 6px rgba(0,0,0,0.07)",
+            "class": null
+          },
+          "content": [
+            {
+              "type": "paragraph",
+              "attrs": {
+                "textAlign": null,
+                "style": "margin:0 0 20px;font-size:16px;color:#374151;line-height:1.6",
+                "class": null
+              },
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Start typing your first note today — your ideas will live forever on the permaweb."
+                }
+              ]
+            },
+            {
+              "type": "paragraph",
+              "attrs": {
+                "textAlign": null,
+                "style": null,
+                "class": null
+              },
+              "content": [
+                {
+                  "type": "button",
+                  "attrs": {
+                    "style": "background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);color:white;border:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 4px 15px rgba(99,102,241,0.3);transition:transform 0.2s;margin-right:10px",
+                    "class": null,
+                    "onclick": null,
+                    "onmouseover": "this.style.transform='translateY(-2px)'",
+                    "onmouseout": "this.style.transform='translateY(0)'"
+                  },
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Get Started"
+                    }
+                  ],
+                  "marks": [
+                    {
+                      "type": "bold"
+                    }
+                  ]
+                },
+                {
+                  "type": "button",
+                  "attrs": {
+                    "style": "background:transparent;color:#6366f1;border:2px solid #6366f1;padding:12px 30px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.2s",
+                    "class": null,
+                    "onclick": null,
+                    "onmouseover": "this.style.background='#eef2ff'",
+                    "onmouseout": "this.style.background='transparent'"
+                  },
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Learn More"
+                    }
+                  ],
+                  "marks": [
+                    {
+                      "type": "bold"
+                    }
+                  ]
+                }
+              ]
             }
           ]
         }
@@ -276,27 +917,14 @@
     {
       "type": "paragraph",
       "attrs": {
-        "textAlign": "left"
-      },
-      "content": [
-        {
-          "type": "text",
-          "text": "Ready to get started? Click "
-        },
-        {
-          "type": "text",
-          "marks": [
-            {
-              "type": "bold"
-            }
-          ],
-          "text": "Save"
-        },
-        {
-          "type": "text",
-          "text": " to store your first note on Arweave, or explore the formatting options in the toolbar above. Happy note-taking! ✨"
-        }
-      ]
+        "textAlign": null,
+        "style": null,
+        "class": null
+      }
     }
-  ]
+  ],
+  "password": 0,
+  "passwordProtected": false,
+  "timestamp": "2025-11-14T18:38:22.296Z",
+  "previousTransactionId": []
 }
