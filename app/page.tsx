@@ -46,7 +46,7 @@ export default function Home() {
           setContent={setContent}
           onSidebarToggle={toggleEditorSidebar}
         />
-        <Header />
+        
       </div>
       {handleLoadVersion && handleLoadDocument && (
         <Sidebar
@@ -56,9 +56,10 @@ export default function Home() {
           onLoadDocument={handleLoadDocument}
         />
       )}
+      <Header />
 
       <HeroBanner />
-      <PricingSection />
+      {/* <PricingSection /> */}
       <FAQSection />
       <CTASection />
       <FooterSection />

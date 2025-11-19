@@ -152,6 +152,40 @@ export async function getDocumentFromRedis(txId: string): Promise<{
 }
 
 /**
+ * Get demo document (demo:[txId]) from Redis
+ */
+export async function getDemoDocumentFromRedis(txId: string): Promise<{
+    content: string;
+    txId: string;
+    savedAt?: string;
+    published?: boolean;
+    documentId?: string;
+    title?: string;
+    walletAddress?: string;
+} | null> {
+    try {
+        const client = await getRedisClient();
+        if (!client) {
+            return null;
+        }
+
+        const demoKeys = [`demo:[${txId}]`, `demo:${txId}`];
+
+        for (const key of demoKeys) {
+            const data = await client.get(key);
+            if (data) {
+                return JSON.parse(data);
+            }
+        }
+
+        return null;
+    } catch (error) {
+        console.error('Error getting demo document from Redis:', error);
+        return null;
+    }
+}
+
+/**
  * Remove document from Redis (when published to Arweave)
  */
 export async function removeDocumentFromRedis(txId: string): Promise<boolean> {

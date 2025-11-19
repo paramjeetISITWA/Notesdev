@@ -9,34 +9,34 @@ interface FAQItem {
 
 const faqData: FAQItem[] = [
   {
-    question: "What is Brillance and who is it for?",
+    question: "What is this app and how does blockchain storage work?",
     answer:
-      "Brillance is a comprehensive billing automation platform designed for businesses that need custom contract management. It's perfect for SaaS companies, service providers, and enterprises looking to streamline their billing processes.",
+      "This is a permanent note-taking application that stores your documents on the Arweave blockchain. When you save a note, it's uploaded to Arweave via Bundlr, ensuring your data is stored permanently, decentralized, and censorship-resistant. Your notes are accessible forever, even if our service goes down.",
   },
   {
-    question: "How does the custom contract billing work?",
+    question: "How does Arweave permanent storage work?",
     answer:
-      "Our platform automatically processes your custom contracts, calculates billing amounts based on your specific terms, and generates invoices. You can set up complex pricing structures, usage-based billing, and custom billing cycles.",
+      "Arweave is a decentralized storage network that uses blockchain technology to store data permanently. When you upload a document, you pay a one-time fee in SOL (Solana cryptocurrency) via Bundlr. Your data is then stored across thousands of nodes worldwide, ensuring it's never lost and always accessible. Unlike traditional cloud storage, there are no monthly fees - you pay once and your data is stored forever.",
   },
   {
-    question: "Can I integrate Brillance with my existing tools?",
+    question: "Do I need a Solana wallet to use this?",
     answer:
-      "Yes! Brillance integrates seamlessly with popular CRM systems, accounting software, and payment processors. We support APIs and webhooks for custom integrations with your existing workflow.",
+      "Yes, but it's easy! The app automatically generates a Solana wallet for you when you first use it, or you can use your existing wallet. You'll need a small amount of SOL (usually less than 0.01 SOL) to pay for uploads. Each document upload costs a tiny amount of SOL (typically less than $0.01). You can buy SOL on exchanges like Coinbase or Binance.",
   },
   {
-    question: "What kind of support do you provide?",
+    question: "What happens to my notes if the app shuts down?",
     answer:
-      "We offer 24/7 customer support, dedicated account managers for enterprise clients, comprehensive documentation, and onboarding assistance to help you get started quickly.",
+      "Your notes are stored permanently on the Arweave blockchain, not on our servers. Even if our service shuts down, your notes remain accessible forever through Arweave's decentralized network. You can access them using any Arweave gateway with your transaction ID. This is the power of blockchain storage - true data ownership.",
   },
   {
-    question: "Is my data secure with Brillance?",
+    question: "Is my data secure and private?",
     answer:
-      "Absolutely. We use enterprise-grade security measures including end-to-end encryption, SOC 2 compliance, and regular security audits. Your data is stored in secure, redundant data centers.",
+      "Yes! You can password-protect your documents with AES encryption before uploading to Arweave. The encrypted content is then stored permanently on the blockchain. Only those with the password can decrypt and read your notes. Additionally, Arweave's decentralized nature means your data is distributed across thousands of nodes, making it highly secure and resistant to censorship.",
   },
   {
-    question: "How do I get started with Brillance?",
+    question: "How do I get started?",
     answer:
-      "Getting started is simple! Sign up for our free trial, connect your existing systems, and our onboarding team will help you set up your first custom billing workflow within 24 hours.",
+      "Getting started is simple! Just start writing in the editor. When you're ready to save permanently, click the save button. The app will automatically generate a Solana wallet for you (or use your existing one), and guide you through funding it if needed. Once funded, your document will be uploaded to Arweave and you'll receive a transaction ID that you can use to access it forever.",
   },
 ];
 
@@ -80,9 +80,9 @@ export default function FAQSection() {
               Frequently Asked Questions
             </div>
             <div className="w-full text-[#605A57] text-base font-normal leading-7 font-sans">
-              Explore your data, build your dashboard,
+              Everything you need to know about permanent blockchain storage,
               <br className="hidden md:block" />
-              bring your team together.
+              Arweave, and decentralized note-taking.
             </div>
           </div>
 
@@ -107,17 +107,15 @@ export default function FAQSection() {
                       </div>
                       <div className="flex justify-center items-center">
                         <ChevronDownIcon
-                          className={`w-6 h-6 text-[rgba(73,66,61,0.60)] transition-transform duration-300 ease-in-out ${
-                            isOpen ? "rotate-180" : "rotate-0"
-                          }`}
+                          className={`w-6 h-6 text-[rgba(73,66,61,0.60)] transition-transform duration-300 ease-in-out ${isOpen ? "rotate-180" : "rotate-0"
+                            }`}
                         />
                       </div>
                     </button>
 
                     <div
-                      className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                        isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-                      }`}
+                      className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                        }`}
                     >
                       <div className="px-5 pb-[18px] text-[#605A57] text-sm font-normal leading-6 font-sans">
                         {item.answer}

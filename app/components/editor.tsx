@@ -587,6 +587,12 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
     setDocuments(updatedDocs)
   }
 
+  const handleNewDocument = () => {
+    setCurrentDocument(null)
+    setDocumentTitle('')
+    editor?.commands.setContent('')
+  }
+
   // Expose functions to parent components
   useImperativeHandle(ref, () => {
     return {
@@ -622,6 +628,20 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
           >
             <Home className="w-8 h-8 text-xl" />
           </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-gray-600 hover:text-gray-900 cursor-pointer"
+            onClick={() => handleNewDocument()}
+            title="New Document"
+          >
+            <Plus className="w-8 h-8 text-xl" />
+          </Button>
+
+
+
+
 
 
 

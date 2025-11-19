@@ -81,10 +81,37 @@ import { usePathname } from "next/navigation"
 
 // --- Lib ---
 import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
-import { loadFromArweave } from "@/lib/arweave-utils"
 
 // --- Styles ---
 import "@/components/tiptap-templates/simple/simple-editor.scss"
+
+type DemoLoadResult = {
+  success: boolean
+  content?: string
+  error?: string
+}
+
+async function loadDemoContent(txId: string): Promise<DemoLoadResult> {
+  try {
+    const response = await fetch(`/api/demo?txId=${encodeURIComponent(txId)}`)
+    const data = await response.json()
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || 'Failed to load demo content',
+      }
+    }
+
+    return data
+  } catch (error) {
+    console.error('Error loading demo content:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }
+  }
+}
 
 // import content from "@/components/tiptap-templates/simple/data/content.json"
 
@@ -232,8 +259,8 @@ export function SimpleEditor() {
       if (txId && txId.trim()) {
         setIsLoadingContent(true)
         try {
-          console.log('Loading content from Arweave with TX ID:', txId)
-          const result = await loadFromArweave(txId.trim())
+          console.log('Loading demo content from Redis with TX ID:', txId)
+          const result = await loadDemoContent(txId.trim())
 
           if (result.success && result.content) {
             try {
@@ -1261,6 +1288,10 @@ export function SimpleEditor() {
           role="presentation"
           className="simple-editor-content"
         />
+
+        
+
+
       </EditorContext.Provider>
     </div>
   )
