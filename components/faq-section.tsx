@@ -16,12 +16,12 @@ const faqData: FAQItem[] = [
   {
     question: "How does Arweave permanent storage work?",
     answer:
-      "Arweave is a decentralized storage network that uses blockchain technology to store data permanently. When you upload a document, you pay a one-time fee in SOL (Solana cryptocurrency) via Bundlr. Your data is then stored across thousands of nodes worldwide, ensuring it's never lost and always accessible. Unlike traditional cloud storage, there are no monthly fees - you pay once and your data is stored forever.",
+      "Arweave is a decentralized storage network that uses blockchain technology to store data permanently. When you upload a document, you pay a one-time fee in AR (Arweave cryptocurrency) via Bundlr. Your data is then stored across thousands of nodes worldwide, ensuring it's never lost and always accessible. Unlike traditional cloud storage, there are no monthly fees - you pay once and your data is stored forever.",
   },
   {
-    question: "Do I need a Solana wallet to use this?",
+    question: "Do I need an Arweave wallet to use this?",
     answer:
-      "Yes, but it's easy! The app automatically generates a Solana wallet for you when you first use it, or you can use your existing wallet. You'll need a small amount of SOL (usually less than 0.01 SOL) to pay for uploads. Each document upload costs a tiny amount of SOL (typically less than $0.01). You can buy SOL on exchanges like Coinbase or Binance.",
+      "Yes, but it's easy! The app automatically generates an Arweave wallet for you when you first use it, or you can use your existing wallet. You'll need a small amount of AR (usually less than 0.01 AR) to pay for uploads. Each document upload costs a tiny amount of AR (typically less than $0.01). You can buy AR on exchanges like Binance or Gate.io.",
   },
   {
     question: "What happens to my notes if the app shuts down?",
@@ -36,7 +36,7 @@ const faqData: FAQItem[] = [
   {
     question: "How do I get started?",
     answer:
-      "Getting started is simple! Just start writing in the editor. When you're ready to save permanently, click the save button. The app will automatically generate a Solana wallet for you (or use your existing one), and guide you through funding it if needed. Once funded, your document will be uploaded to Arweave and you'll receive a transaction ID that you can use to access it forever.",
+      "Getting started is simple! Just start writing in the editor. When you're ready to save permanently, click the save button. The app will automatically generate an Arweave wallet for you (or use your existing one), and guide you through funding it if needed. Once funded, your document will be uploaded to Arweave and you'll receive a transaction ID that you can use to access it forever.",
   },
 ];
 

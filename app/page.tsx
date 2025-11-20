@@ -23,20 +23,6 @@ export default function Home() {
     setIsEditorSidebarOpen(false);
   };
 
-  const handleLoadVersion = useCallback((versionNumber: number) => {
-    if (editorRef.current) {
-      editorRef.current.loadFromVersion(versionNumber);
-    } else {
-    }
-  }, []);
-
-  const handleLoadDocument = useCallback((documentId: string) => {
-    if (editorRef.current) {
-      editorRef.current.loadDocument(documentId);
-    } else {
-    }
-  }, []);
-
   return (
     <>
       <div className="block">
@@ -46,16 +32,12 @@ export default function Home() {
           setContent={setContent}
           onSidebarToggle={toggleEditorSidebar}
         />
-        
+
       </div>
-      {handleLoadVersion && handleLoadDocument && (
-        <Sidebar
-          isOpen={isEditorSidebarOpen}
-          onClose={closeEditorSidebar}
-          onLoadVersion={handleLoadVersion}
-          onLoadDocument={handleLoadDocument}
-        />
-      )}
+      <Sidebar
+        isOpen={isEditorSidebarOpen}
+        onClose={closeEditorSidebar}
+      />
       <Header />
 
       <HeroBanner />

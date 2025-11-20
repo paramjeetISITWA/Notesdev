@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPendingDocuments, checkArweavePublishStatus, markDocumentAsPublished, removeDocumentFromRedis } from '@/lib/redis-utils';
+import { getPendingDocuments, checkArweavePublishStatus, markDocumentAsPublished, removeDocumentFromRedis, getDocumentFromRedis, removeUserPendingTransaction } from '@/lib/redis-utils';
 
 /**
  * Cleanup endpoint to check pending documents and mark them as published
@@ -29,12 +29,17 @@ export async function POST(request: NextRequest) {
         for (const txId of pendingDocs) {
             try {
                 results.checked++;
+                const redisDoc = await getDocumentFromRedis(txId);
+                const walletAddress = redisDoc?.walletAddress;
                 const isPublished = await checkArweavePublishStatus(txId);
 
                 if (isPublished) {
                     await markDocumentAsPublished(txId);
                     // Remove from Redis after publishing (no longer needed since it's on Arweave)
                     await removeDocumentFromRedis(txId);
+                    if (walletAddress) {
+                        await removeUserPendingTransaction(walletAddress, txId);
+                    }
                     results.published++;
                     console.log(`Document ${txId} is now published and removed from Redis`);
                 } else {

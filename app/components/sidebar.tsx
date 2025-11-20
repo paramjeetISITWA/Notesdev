@@ -1,36 +1,21 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import {
-    PencilIcon,
     SearchIcon,
-    ArrowUpDownIcon,
-    LayoutGridIcon,
     SignalIcon as SignInIcon,
     ChevronDownIcon,
     SunIcon,
     XIcon,
-    Folder,
     Clock,
-    Upload,
+    Globe,
+    Copy as CopyIcon,
+    Wallet as WalletIcon,
 } from "lucide-react"
 
-import {
-    getAllDocuments,
-    getCurrentDocument,
-    getVersionContent,
-    Document,
-    DocumentVersion
-} from '@/lib/arweave-utils'
-
-interface Note {
-    id: string
-    title: string
-    preview: string
-    createdAt: Date
-}
+import { getArweaveWalletAddress } from '@/lib/arweave-utils'
 
 interface SidebarProps {
     isOpen: boolean
@@ -39,65 +24,201 @@ interface SidebarProps {
     onLoadDocument?: (documentId: string) => void
 }
 
-export default function Sidebar({ isOpen, onClose, onLoadVersion, onLoadDocument }: SidebarProps) {
-    const pathname = usePathname()
+interface PendingTransaction {
+    txId: string
+    documentId?: string
+    title?: string
+    savedAt: string
+}
+
+interface PublishedTransaction {
+    txId: string
+    blockTimestamp?: number | null
+    blockHeight?: number | null
+    arweaveUrl: string
+    tags: Record<string, string>
+}
+
+type TransactionListItem =
+    | { kind: 'pending'; tx: PendingTransaction }
+    | { kind: 'published'; tx: PublishedTransaction }
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     const router = useRouter()
-    const [notes, setNotes] = useState<Note[]>([
-        {
-            id: "1",
-            title: "hi whats up",
-            preview: "This is a sample note...",
-            createdAt: new Date(),
-        },
-    ])
     const [searchQuery, setSearchQuery] = useState("")
-    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
-    const [documents, setDocuments] = useState<Document[]>([])
-    const [currentDocument, setCurrentDocument] = useState<Document | null>(null)
-    const [activeTab, setActiveTab] = useState<"notes" | "documents">("documents")
+    const [walletAddress, setWalletAddress] = useState<string | null>(null)
+    const [pendingTransactions, setPendingTransactions] = useState<PendingTransaction[]>([])
+    const [publishedTransactions, setPublishedTransactions] = useState<PublishedTransaction[]>([])
+    const [transactionsLoading, setTransactionsLoading] = useState(false)
+    const [transactionsError, setTransactionsError] = useState<string | null>(null)
+    const [walletCopyState, setWalletCopyState] = useState<'idle' | 'copied' | 'error'>('idle')
 
-    const filteredNotes = notes.filter((note) => note.title.toLowerCase().includes(searchQuery.toLowerCase()))
-    const filteredDocuments = documents
-        .filter((doc) => (doc.title || "").toLowerCase().includes(searchQuery.toLowerCase()))
-        .sort((a, b) => {
-            if (sortOrder === "asc") {
-                return new Date(a.lastModified).getTime() - new Date(b.lastModified).getTime()
-            }
-            return new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime()
-        })
-
-    // Initialize documents
     useEffect(() => {
-        const allDocs = getAllDocuments()
-        const currentDoc = getCurrentDocument()
-        setDocuments(allDocs)
-        setCurrentDocument(currentDoc)
+        const address = getArweaveWalletAddress()
+        setWalletAddress(address)
     }, [])
 
-    const handleLoadVersion = (versionNumber: number) => {
-        if (onLoadVersion && typeof onLoadVersion === 'function') {
-            onLoadVersion(versionNumber)
-        }
-        onClose() // Close sidebar after loading
-    }
-
-    const handleLoadDocument = (documentId: string) => {
-
-        // Find the document to get its transaction ID
-        const doc = documents.find(d => d.id === documentId)
-
-        if (doc && doc.arweaveTransactionId) {
-            // Redirect to document page with transaction ID
-            router.push(`/document/${doc.arweaveTransactionId}`)
-            onClose() // Close sidebar after redirect
-        } else {
-            // If no transaction ID, fall back to loading in editor
-            if (onLoadDocument && typeof onLoadDocument === 'function') {
-                onLoadDocument(documentId)
+    useEffect(() => {
+        if (!walletAddress || !isOpen) {
+            if (!walletAddress) {
+                setPendingTransactions([])
+                setPublishedTransactions([])
+                setWalletCopyState('idle')
             }
-            onClose() // Close sidebar after loading
+            setTransactionsLoading(false)
+            setTransactionsError(null)
+            return
+        }
+
+        const currentWalletAddress = walletAddress
+
+        let isActive = true
+        const controller = new AbortController()
+
+        async function fetchTransactions() {
+            setTransactionsLoading(true)
+            setTransactionsError(null)
+
+            try {
+                const response = await fetch(`/api/user/txids?walletAddress=${encodeURIComponent(currentWalletAddress)}&limit=25`, {
+                    signal: controller.signal,
+                })
+
+                if (!response.ok) {
+                    const text = await response.text()
+                    throw new Error(text || 'Failed to load transactions')
+                }
+
+                const data = await response.json()
+                if (!isActive) {
+                    return
+                }
+
+                setPendingTransactions(data.pendingTransactions ?? [])
+                setPublishedTransactions(data.publishedTransactions ?? [])
+            } catch (error) {
+                if (!isActive || (error instanceof DOMException && error.name === 'AbortError')) {
+                    return
+                }
+                console.error('Failed to load wallet transactions:', error)
+                setTransactionsError(error instanceof Error ? error.message : 'Failed to load wallet transactions')
+            } finally {
+                if (isActive) {
+                    setTransactionsLoading(false)
+                }
+            }
+        }
+
+        fetchTransactions()
+
+        return () => {
+            isActive = false
+            controller.abort()
+        }
+    }, [walletAddress, isOpen])
+
+    const handleTransactionClick = (transactionId: string) => {
+        router.push(`/document/${transactionId}`)
+        onClose()
+    }
+
+    const formatTxId = (txId: string) => {
+        if (txId.length <= 12) {
+            return txId
+        }
+        return `${txId.slice(0, 6)}...${txId.slice(-6)}`
+    }
+
+    const formatSavedAt = (timestamp?: string) => {
+        if (!timestamp) {
+            return 'Unknown'
+        }
+        const date = new Date(timestamp)
+        if (Number.isNaN(date.getTime())) {
+            return 'Unknown'
+        }
+        return date.toLocaleString()
+    }
+
+    const formatBlockTimestamp = (timestamp?: number | null) => {
+        if (!timestamp) {
+            return 'Unknown'
+        }
+        const date = new Date(timestamp * 1000)
+        if (Number.isNaN(date.getTime())) {
+            return 'Unknown'
+        }
+        return date.toLocaleString()
+    }
+
+    const handleCopyWalletAddress = async () => {
+        if (!walletAddress) {
+            return
+        }
+        try {
+            if (navigator?.clipboard) {
+                await navigator.clipboard.writeText(walletAddress)
+            } else {
+                const textarea = document.createElement('textarea')
+                textarea.value = walletAddress
+                textarea.style.position = 'fixed'
+                textarea.style.opacity = '0'
+                document.body.appendChild(textarea)
+                textarea.focus()
+                textarea.select()
+                document.execCommand('copy')
+                document.body.removeChild(textarea)
+            }
+            setWalletCopyState('copied')
+            setTimeout(() => setWalletCopyState('idle'), 2000)
+        } catch (error) {
+            console.error('Failed to copy wallet address:', error)
+            setWalletCopyState('error')
+            setTimeout(() => setWalletCopyState('idle'), 2000)
         }
     }
+
+    const getPublishedTitle = (tx: PublishedTransaction) => {
+        const tagPriority = ['Title', 'title', 'Document-Title', 'document-title', 'Document-ID', 'document-id', 'App', 'app', 'Name', 'name']
+        for (const key of tagPriority) {
+            const value = tx.tags?.[key]
+            if (value && typeof value === 'string') {
+                return value
+            }
+        }
+        return 'Published transaction'
+    }
+
+    const transactionItems = useMemo<TransactionListItem[]>(() => {
+        const pendingList = [...pendingTransactions]
+            .sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime())
+            .map((tx) => ({ kind: 'pending' as const, tx }))
+
+        const publishedList = [...publishedTransactions]
+            .sort((a, b) => {
+                const aTime = a.blockTimestamp ?? 0
+                const bTime = b.blockTimestamp ?? 0
+                return bTime - aTime
+            })
+            .map((tx) => ({ kind: 'published' as const, tx }))
+
+        return [...pendingList, ...publishedList]
+    }, [pendingTransactions, publishedTransactions])
+
+    const filteredTransactions = useMemo(() => {
+        const query = searchQuery.trim().toLowerCase()
+        if (!query) {
+            return transactionItems
+        }
+
+        return transactionItems.filter((item) => {
+            const title = item.kind === 'pending'
+                ? (item.tx.title?.trim() || 'Untitled document')
+                : getPublishedTitle(item.tx)
+
+            return title.toLowerCase().includes(query) || item.tx.txId.toLowerCase().includes(query)
+        })
+    }, [transactionItems, searchQuery])
 
     return (
         <>
@@ -123,182 +244,92 @@ export default function Sidebar({ isOpen, onClose, onLoadVersion, onLoadDocument
                     </button>
                 </div>
 
-                {/* Top Actions */}
+                {/* Search & Wallet Info */}
                 <div className="p-4 border-b border-gray-200">
-                    {/* Tab Navigation */}
-                    {/* <div className="flex mb-4">
-                        <button
-                            onClick={() => setActiveTab("documents")}
-                            className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === "documents"
-                                ? "bg-blue-100 text-blue-700"
-                                : "text-gray-600 hover:text-gray-900"
-                                }`}
-                        >
-                            Documents
-                        </button>
-                        <button
-                            onClick={() => setActiveTab("notes")}
-                            className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === "notes"
-                                ? "bg-blue-100 text-blue-700"
-                                : "text-gray-600 hover:text-gray-900"
-                                }`}
-                        >
-                            Notes
-                        </button>
-                    </div> */}
-
-                    <div className="flex items-center gap-2 mb-4">
-                        {/* <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="New note">
-                                <PencilIcon className="w-5 h-5 text-gray-700" />
-                            </button> */}
+                    <div className="flex items-center gap-2">
                         <div className="flex-1 relative">
                             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="Search"
+                                placeholder="Search transactions"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
-                        {/* <button
-                            onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            title="Sort"
-                        >
-                            <ArrowUpDownIcon className="w-5 h-5 text-gray-700" />
-                        </button>
-                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="View options">
-                            <LayoutGridIcon className="w-5 h-5 text-gray-700" />
-                        </button> */}
                     </div>
+
                 </div>
 
-                {/* Content List */}
+                {/* Transactions List */}
                 <div className="flex-1 overflow-y-auto">
-                    <div className="p-4">
-                        {activeTab === "documents" ? (
+                    <div className="p-4 space-y-4">
+                        {!walletAddress && (
+                            <p className="text-sm text-gray-500">
+                                Import or generate an Arweave wallet to see your uploads.
+                            </p>
+                        )}
+
+                        {walletAddress && (
                             <>
-                                {/* <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Documents</h3> */}
+                                {transactionsLoading && (
+                                    <p className="text-sm text-gray-500">Loading transactions...</p>
+                                )}
 
-                                {/* Current Document */}
-                                {currentDocument && (
-                                    <div className="mb-4">
-                                        <div className="bg-blue-50 p-3 rounded-lg mb-3">
-                                            <div className="font-medium text-blue-900 text-sm">{currentDocument.title}</div>
-                                            <div className="text-xs text-blue-700 mt-1">
-                                                {currentDocument.versions.length} version{currentDocument.versions.length !== 1 ? 's' : ''}
-                                            </div>
-                                            <div className="text-xs text-blue-600 mt-1">
-                                                Last modified: {new Date(currentDocument.lastModified).toLocaleDateString()}
-                                            </div>
-                                        </div>
+                                {transactionsError && (
+                                    <p className="text-sm text-red-500">{transactionsError}</p>
+                                )}
 
-                                        {/* Document Versions */}
-                                        {currentDocument.versions.length > 0 && (
-                                            <div className="space-y-2">
-                                                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Versions</h4>
-                                                {currentDocument.versions.map((version, index) => (
-                                                    <div
-                                                        key={version.versionNumber}
-                                                        className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 cursor-pointer"
-                                                        onClick={() => handleLoadVersion(version.versionNumber)}
-                                                    >
-                                                        <div className="flex items-start justify-between">
-                                                            <div className="flex-1">
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className="font-medium text-sm text-gray-900">
-                                                                        Version {version.versionNumber}
-                                                                    </div>
-                                                                    {version.versionNumber === 1 ? (
-                                                                        <div className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                                                                            Initial
-                                                                        </div>
-                                                                    ) : (
-                                                                        <div className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                                                                            v{version.versionNumber}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                                <div className="text-xs text-gray-500 mt-1">
-                                                                    {version.preview}
-                                                                </div>
-                                                                <div className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-                                                                    <Clock className="w-3 h-3" />
-                                                                    {new Date(version.timestamp).toLocaleString()}
-                                                                </div>
+                                {!transactionsLoading && !transactionsError && filteredTransactions.length === 0 && (
+                                    <p className="text-sm text-gray-500">
+                                        {searchQuery.trim()
+                                            ? 'No transactions match your search.'
+                                            : 'No transactions found yet.'}
+                                    </p>
+                                )}
+
+                                {!transactionsLoading && !transactionsError && filteredTransactions.length > 0 && (
+                                    <div className="space-y-2">
+                                        {filteredTransactions.map((item) => {
+                                            const title = item.kind === 'pending'
+                                                ? (item.tx.title?.trim() || 'Untitled document')
+                                                : getPublishedTitle(item.tx)
+                                            const timestampLabel = item.kind === 'pending'
+                                                ? formatSavedAt(item.tx.savedAt)
+                                                : formatBlockTimestamp(item.tx.blockTimestamp)
+                                            const statusLabel = item.kind === 'pending' ? 'Pending' : 'Published'
+                                            const iconClasses = item.kind === 'pending'
+                                                ? 'bg-amber-100 text-amber-700'
+                                                : 'bg-emerald-100 text-emerald-700'
+                                            const IconComponent = item.kind === 'pending' ? Clock : Globe
+
+                                            return (
+                                                <button
+                                                    key={`${item.kind}-${item.tx.txId}`}
+                                                    className="w-full text-left border border-gray-200 rounded-lg p-3 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                                                    onClick={() => handleTransactionClick(item.tx.txId)}
+                                                >
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div>
+                                                            <div className="text-sm font-semibold text-gray-900">
+                                                                {title}
                                                             </div>
-                                                            <div className="text-xs text-gray-400 ml-2">
-                                                                #{version.versionNumber}
+                                                            <div className="text-xs text-gray-500 mt-1">
+                                                                {statusLabel} • {timestampLabel}
+                                                            </div>
+                                                            <div className="text-[11px] text-gray-400 font-mono mt-2">
+                                                                {formatTxId(item.tx.txId)}
                                                             </div>
                                                         </div>
+                                                        <div className={`p-2 rounded-full ${iconClasses}`}>
+                                                            <IconComponent className="w-4 h-4" />
+                                                        </div>
                                                     </div>
-                                                ))}
-                                            </div>
-                                        )}
+                                                </button>
+                                            )
+                                        })}
                                     </div>
                                 )}
-
-                                {/* All Documents */}
-                                {filteredDocuments.length > 0 && (
-                                    <div className="space-y-2">
-                                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">All Documents</h4>
-                                        {filteredDocuments.map((doc) => (
-                                            <div
-                                                key={doc.id}
-                                                className={`border rounded-lg p-3 cursor-pointer ${doc.id === currentDocument?.id
-                                                    ? 'border-blue-300 bg-blue-50'
-                                                    : 'border-gray-200 hover:bg-gray-50'
-                                                    }`}
-                                                onClick={() => handleLoadDocument(doc.id)}
-                                            >
-                                                <div className="font-medium text-sm text-gray-900">
-                                                    {doc.title}
-                                                </div>
-                                                <div className="text-xs text-gray-500 mt-1">
-                                                    {doc.versions.length} version{doc.versions.length !== 1 ? 's' : ''}
-                                                </div>
-                                                <div className="text-xs text-gray-400 mt-1">
-                                                    {new Date(doc.lastModified).toLocaleDateString()}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {(documents.length === 0 || filteredDocuments.length === 0) && (
-                                    <div className="text-center text-gray-500 py-8">
-                                        <Folder className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                                        {documents.length === 0 ? (
-                                            <>
-                                                <p className="text-sm">No documents yet</p>
-                                                <p className="text-xs">Upload content to create your first document</p>
-                                            </>
-                                        ) : (
-                                            <p className="text-sm">No documents match your search</p>
-                                        )}
-                                    </div>
-                                )}
-                            </>
-                        ) : (
-                            <>
-                                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Notes</h3>
-                                <div className="space-y-2">
-                                    {filteredNotes.length > 0 ? (
-                                        filteredNotes.map((note) => (
-                                            <Link
-                                                key={note.id}
-                                                href={`/notes/${note.id}`}
-                                                className="block p-3 rounded-lg hover:bg-gray-50 transition-colors group"
-                                            >
-                                                <p className="text-sm font-medium text-gray-900 group-hover:text-blue-600 truncate">{note.title}</p>
-                                                <p className="text-xs text-gray-500 truncate mt-1">{note.preview}</p>
-                                            </Link>
-                                        ))
-                                    ) : (
-                                        <p className="text-sm text-gray-500 text-center py-8">No notes found</p>
-                                    )}
-                                </div>
                             </>
                         )}
                     </div>
@@ -306,13 +337,46 @@ export default function Sidebar({ isOpen, onClose, onLoadVersion, onLoadDocument
 
                 {/* Bottom Actions */}
                 <div className="border-t border-gray-200 p-4 space-y-3">
-                    <Link
-                        href="/signin"
-                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                    >
-                        <SignInIcon className="w-4 h-4" />
-                        Sign In
-                    </Link>
+                    {walletAddress && (
+                        <div className="mt-4 rounded-xl border border-gray-200 bg-gradient-to-r from-gray-50 to-white shadow-sm p-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-2 rounded-full bg-blue-50 text-blue-600 border border-blue-100">
+                                        <WalletIcon className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[11px] uppercase tracking-wide text-gray-500 font-semibold">
+                                            Active Wallet
+                                        </p>
+                                        <p className="text-xs font-mono text-gray-800 mt-0.5">
+                                            {formatTxId(walletAddress)}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleCopyWalletAddress}
+                                    className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-600"
+                                    title="Copy wallet address"
+                                    aria-label="Copy wallet address"
+                                >
+                                    <CopyIcon className="w-4 h-4" />
+                                </button>
+                            </div>
+                            <div className="mt-2 h-px bg-gray-100" />
+                            <div className="mt-2 flex items-center gap-2 text-[10px] text-gray-500">
+                                {walletCopyState === 'copied' && (
+                                    <span className="text-emerald-600 font-semibold">Copied to clipboard</span>
+                                )}
+                                {walletCopyState === 'error' && (
+                                    <span className="text-red-600 font-semibold">Copy failed</span>
+                                )}
+                                {walletCopyState === 'idle' && (
+                                    <span>Tap copy to use this address elsewhere</span>
+                                )}
+                            </div>
+                        </div>
+                    )}
                     <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
                         <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Accessibility">
                             <span className="text-xs font-semibold text-gray-600">A</span>

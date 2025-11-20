@@ -1,4 +1,5 @@
 import { createClient, RedisClientType } from 'redis';
+import type { Document } from '@/lib/types/document';
 
 // Redis client instance
 let redis: RedisClientType | null = null;
@@ -81,6 +82,149 @@ export async function getRedisClient(): Promise<RedisClientType | null> {
     }
 
     return redis;
+}
+
+export interface PendingTransactionEntry {
+    txId: string;
+    documentId?: string;
+    title?: string;
+    savedAt: string;
+}
+
+const getUserPendingKey = (walletAddress: string) => `user:${walletAddress}:pending`;
+const getUserDocumentsKey = (walletAddress: string) => `user:${walletAddress}:documents`;
+const getUserCurrentDocumentKey = (walletAddress: string) => `user:${walletAddress}:current-doc`;
+
+function normalizeWalletAddress(walletAddress?: string): string | null {
+    if (!walletAddress) {
+        return null;
+    }
+    const trimmed = walletAddress.trim();
+    return trimmed.length > 0 ? trimmed : null;
+}
+
+function parsePendingTransactions(raw: string | null): PendingTransactionEntry[] {
+    if (!raw) {
+        return [];
+    }
+
+    try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+            if (parsed.length === 0) {
+                return [];
+            }
+
+            const first = parsed[0];
+            if (typeof first === 'string') {
+                return (parsed as string[]).map((txId) => ({
+                    txId,
+                    savedAt: new Date().toISOString(),
+                }));
+            }
+
+            if (first && typeof first === 'object' && 'txId' in first) {
+                return parsed as PendingTransactionEntry[];
+            }
+        }
+    } catch (error) {
+        console.error('Error parsing pending transactions from Redis:', error);
+    }
+
+    return [];
+}
+
+export async function getUserDocuments(walletAddress: string): Promise<Document[]> {
+    const normalizedWallet = normalizeWalletAddress(walletAddress);
+    if (!normalizedWallet) {
+        return [];
+    }
+
+    try {
+        const client = await getRedisClient();
+        if (!client) {
+            return [];
+        }
+
+        const key = getUserDocumentsKey(normalizedWallet);
+        const data = await client.get(key);
+        if (!data) {
+            return [];
+        }
+
+        return JSON.parse(data);
+    } catch (error) {
+        console.error('Error getting user documents from Redis:', error);
+        return [];
+    }
+}
+
+export async function saveUserDocuments(walletAddress: string, documents: Document[]): Promise<boolean> {
+    const normalizedWallet = normalizeWalletAddress(walletAddress);
+    if (!normalizedWallet) {
+        return false;
+    }
+
+    try {
+        const client = await getRedisClient();
+        if (!client) {
+            return false;
+        }
+
+        const key = getUserDocumentsKey(normalizedWallet);
+        await client.set(key, JSON.stringify(documents));
+        return true;
+    } catch (error) {
+        console.error('Error saving user documents to Redis:', error);
+        return false;
+    }
+}
+
+export async function getUserCurrentDocumentId(walletAddress: string): Promise<string | null> {
+    const normalizedWallet = normalizeWalletAddress(walletAddress);
+    if (!normalizedWallet) {
+        return null;
+    }
+
+    try {
+        const client = await getRedisClient();
+        if (!client) {
+            return null;
+        }
+
+        const key = getUserCurrentDocumentKey(normalizedWallet);
+        return await client.get(key);
+    } catch (error) {
+        console.error('Error getting current document id from Redis:', error);
+        return null;
+    }
+}
+
+export async function setUserCurrentDocumentId(walletAddress: string, documentId: string | null): Promise<boolean> {
+    const normalizedWallet = normalizeWalletAddress(walletAddress);
+    if (!normalizedWallet) {
+        return false;
+    }
+
+    try {
+        const client = await getRedisClient();
+        if (!client) {
+            return false;
+        }
+
+        const key = getUserCurrentDocumentKey(normalizedWallet);
+
+        if (!documentId) {
+            await client.del(key);
+        } else {
+            await client.set(key, documentId);
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error setting current document id in Redis:', error);
+        return false;
+    }
 }
 
 /**
@@ -235,26 +379,40 @@ export async function markDocumentAsPublished(txId: string): Promise<boolean> {
 }
 
 /**
- * Save user transaction IDs
+ * Save a pending transaction for a user (kept until published)
  */
-export async function saveUserTransactionIds(walletAddress: string, txId: string): Promise<boolean> {
+export async function saveUserPendingTransaction(walletAddress: string, txId: string, metadata?: {
+    documentId?: string;
+    title?: string;
+    savedAt?: string;
+}): Promise<boolean> {
+    const normalizedWallet = normalizeWalletAddress(walletAddress);
+    if (!normalizedWallet) {
+        return false;
+    }
+
     try {
         const client = await getRedisClient();
         if (!client) {
             return false;
         }
 
-        const key = `user:${walletAddress}:txids`;
+        const key = getUserPendingKey(normalizedWallet);
 
-        // Get existing transaction IDs
+        // Get existing pending transactions
         const existing = await client.get(key);
-        const txIds: string[] = existing ? JSON.parse(existing) : [];
+        const pending = parsePendingTransactions(existing);
 
-        // Add new transaction ID if not already present
-        if (!txIds.includes(txId)) {
-            txIds.push(txId);
-            // Save with no expiration (permanent storage)
-            await client.set(key, JSON.stringify(txIds));
+        // Add new transaction if not already present
+        if (!pending.some(tx => tx.txId === txId)) {
+            pending.push({
+                txId,
+                documentId: metadata?.documentId,
+                title: metadata?.title,
+                savedAt: metadata?.savedAt || new Date().toISOString(),
+            });
+            // Save with no expiration (permanent until cleaned)
+            await client.set(key, JSON.stringify(pending));
         }
 
         return true;
@@ -268,23 +426,80 @@ export async function saveUserTransactionIds(walletAddress: string, txId: string
  * Get all transaction IDs for a user
  */
 export async function getUserTransactionIds(walletAddress: string): Promise<string[]> {
+    const pending = await getUserPendingTransactions(walletAddress);
+    return pending.map(tx => tx.txId);
+}
+
+/**
+ * Legacy helper (kept for backward compatibility)
+ */
+export async function saveUserTransactionIds(walletAddress: string, txId: string, metadata?: {
+    documentId?: string;
+    title?: string;
+    savedAt?: string;
+}): Promise<boolean> {
+    return saveUserPendingTransaction(walletAddress, txId, metadata);
+}
+
+/**
+ * Get all pending transactions for a user
+ */
+export async function getUserPendingTransactions(walletAddress: string): Promise<PendingTransactionEntry[]> {
+    const normalizedWallet = normalizeWalletAddress(walletAddress);
+    if (!normalizedWallet) {
+        return [];
+    }
+
     try {
         const client = await getRedisClient();
         if (!client) {
             return [];
         }
 
-        const key = `user:${walletAddress}:txids`;
+        const key = getUserPendingKey(normalizedWallet);
+        const data = await client.get(key);
+        return parsePendingTransactions(data);
+    } catch (error) {
+        console.error('Error getting user pending transactions:', error);
+        return [];
+    }
+}
+
+/**
+ * Remove a pending transaction once published
+ */
+export async function removeUserPendingTransaction(walletAddress: string, txId: string): Promise<boolean> {
+    const normalizedWallet = normalizeWalletAddress(walletAddress);
+    if (!normalizedWallet) {
+        return false;
+    }
+
+    try {
+        const client = await getRedisClient();
+        if (!client) {
+            return false;
+        }
+
+        const key = getUserPendingKey(normalizedWallet);
         const data = await client.get(key);
 
         if (!data) {
-            return [];
+            return false;
         }
 
-        return JSON.parse(data);
+        const pending = parsePendingTransactions(data);
+        const filtered = pending.filter(tx => tx.txId !== txId);
+
+        if (filtered.length === 0) {
+            await client.del(key);
+        } else {
+            await client.set(key, JSON.stringify(filtered));
+        }
+
+        return true;
     } catch (error) {
-        console.error('Error getting user transaction IDs:', error);
-        return [];
+        console.error('Error removing pending transaction:', error);
+        return false;
     }
 }
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkArweavePublishStatus, markDocumentAsPublished, removeDocumentFromRedis, getDocumentFromRedis } from '@/lib/redis-utils';
+import { checkArweavePublishStatus, markDocumentAsPublished, removeDocumentFromRedis, getDocumentFromRedis, removeUserPendingTransaction } from '@/lib/redis-utils';
 
 export async function POST(request: NextRequest) {
     try {
@@ -22,10 +22,15 @@ export async function POST(request: NextRequest) {
             });
         }
 
+        const walletAddress = redisDoc.walletAddress;
+
         // If already marked as published, remove from Redis and return
         if (redisDoc.published) {
             // Remove from Redis since it's already published (cleanup legacy entries)
             await removeDocumentFromRedis(transactionId);
+            if (walletAddress) {
+                await removeUserPendingTransaction(walletAddress, transactionId);
+            }
             return NextResponse.json({
                 success: true,
                 published: true,
@@ -42,6 +47,9 @@ export async function POST(request: NextRequest) {
 
             // Remove from Redis after publishing (no longer needed since it's on Arweave)
             await removeDocumentFromRedis(transactionId);
+            if (walletAddress) {
+                await removeUserPendingTransaction(walletAddress, transactionId);
+            }
 
             return NextResponse.json({
                 success: true,
@@ -95,11 +103,16 @@ export async function GET(request: NextRequest) {
             });
         }
 
+        const walletAddress = redisDoc.walletAddress;
+
         // If already marked as published, remove from Redis and check Arweave to confirm
         if (redisDoc.published) {
             const isPublished = await checkArweavePublishStatus(transactionId);
             // Remove from Redis since it's already published (cleanup legacy entries)
             await removeDocumentFromRedis(transactionId);
+            if (walletAddress) {
+                await removeUserPendingTransaction(walletAddress, transactionId);
+            }
             return NextResponse.json({
                 success: true,
                 published: isPublished,
@@ -117,6 +130,9 @@ export async function GET(request: NextRequest) {
 
             // Remove from Redis after publishing (no longer needed since it's on Arweave)
             await removeDocumentFromRedis(transactionId);
+            if (walletAddress) {
+                await removeUserPendingTransaction(walletAddress, transactionId);
+            }
         }
 
         return NextResponse.json({

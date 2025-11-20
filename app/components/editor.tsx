@@ -1,8 +1,5 @@
 "use client"
-
-// import type React from "react"
-
-import { useState, useEffect, forwardRef, useImperativeHandle } from "react"
+import { useState, useEffect, forwardRef, useImperativeHandle, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Save,
@@ -14,6 +11,7 @@ import {
   Copy,
   Globe,
   Home,
+  Share2,
 } from "lucide-react"
 import toast from "react-hot-toast"
 
@@ -21,6 +19,7 @@ import { SimpleEditor } from '@/components/tiptap-templates/simple/simple-editor
 import { VersionDropdownButton } from '@/components/tiptap-ui/version-dropdown-button/version-dropdown-button'
 import { PasswordPopup } from '@/components/tiptap-ui/password-popup/password-popup'
 import { PasswordPromptPopup } from '@/components/tiptap-ui/password-prompt-popup/password-prompt-popup'
+import { AccountDetailsModal } from '@/app/components/account-details-modal'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -29,24 +28,22 @@ import {
 } from '@/components/tiptap-ui-primitive/dropdown-menu/dropdown-menu'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  loadOrCreateSolanaWallet,
+  loadOrCreateArweaveWallet,
   uploadToArweave,
   loadFromArweave,
-  getSolanaWalletAddress,
+  getArweaveWalletAddress,
   getWalletFundingInstructions,
-  getCurrentDocument,
-  addDocumentVersion,
-  getAllDocuments,
-  createDocument,
+} from '@/lib/arweave-utils'
+import {
+  createDocumentRecord,
+  addDocumentVersionRecord,
   getVersionContent,
   getVersionContentWithPassword,
   getLatestVersionContent,
-  getDocumentVersions,
-  saveDocuments,
   getAllPreviousTransactionIds,
-  Document,
-  DocumentVersion
-} from '@/lib/arweave-utils'
+} from '@/lib/document-utils'
+import { fetchDocumentsForWallet, saveDocumentsForWallet } from '@/lib/document-service'
+import type { Document, DocumentVersion } from '@/lib/types/document'
 import { useEditorContext } from '@/hooks/use-editor-context'
 import CryptoJS from 'crypto-js';
 
@@ -55,7 +52,7 @@ interface EditorProps {
   content: string
   setContent: (content: string) => void
   onSidebarToggle?: () => void
-  dataSource?: 'api' | 'redis' | 'localStorage' | null
+  dataSource?: 'api' | 'redis' | null
   transactionId?: string
 }
 
@@ -79,44 +76,118 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
   const [promptVersionNumber, setPromptVersionNumber] = useState<number | null>(null)
   const [showMoreMenu, setShowMoreMenu] = useState(false)
   const [showAccountDetails, setShowAccountDetails] = useState(false)
-  const [dataSource, setDataSource] = useState<'api' | 'redis' | 'localStorage' | null>(null)
+  const [dataSource, setDataSource] = useState<'api' | 'redis' | null>(null)
   const [showIndicator, setShowIndicator] = useState(false)
   const { editor } = useEditorContext()
   const pathname = usePathname()
   const router = useRouter()
+  const dropdownMenuRef = useRef<HTMLDivElement>(null)
+
+  const persistDocuments = useCallback(async (nextDocuments: Document[], nextCurrentId: string | null) => {
+    if (!walletAddress) {
+      return
+    }
+    try {
+      await saveDocumentsForWallet(walletAddress, nextDocuments, nextCurrentId)
+    } catch (error) {
+      console.error('Failed to sync documents to Redis:', error)
+      toast.error('Failed to sync documents to Redis', { duration: 1500 })
+    }
+  }, [walletAddress])
 
 
-  // Initialize wallet and documents on component mount
+  // Initialize wallet on mount
   useEffect(() => {
     const initializeWallet = async () => {
       try {
-        const wallet = await loadOrCreateSolanaWallet()
+        const wallet = await loadOrCreateArweaveWallet()
         setWalletAddress(wallet.address)
-        // toast.success(`Solana wallet initialized: ${wallet.address.slice(0, 8)}...${wallet.address.slice(-8)}`, { duration: 1000 })
       } catch (error) {
-        toast.error('Failed to initialize Solana wallet')
+        toast.error('Failed to initialize Arweave wallet')
       }
     }
 
-    const initializeDocuments = () => {
-      const allDocs = getAllDocuments()
-      setDocuments(allDocs)
-      // Don't create a document automatically - let user create one when needed
-      setCurrentDocument(null)
-      setDocumentTitle('')
-    }
-
     initializeWallet()
-    initializeDocuments()
   }, [])
 
   // Update wallet address display when it changes
   useEffect(() => {
-    const currentAddress = getSolanaWalletAddress()
+    const currentAddress = getArweaveWalletAddress()
     if (currentAddress) {
       setWalletAddress(currentAddress)
     }
   }, [])
+
+  useEffect(() => {
+    if (!walletAddress) {
+      setDocuments([])
+      setCurrentDocument(null)
+      setDocumentTitle('')
+      return
+    }
+
+    let cancelled = false
+
+    const loadDocumentsForWallet = async () => {
+      try {
+        const { documents: loadedDocuments, currentDocumentId } = await fetchDocumentsForWallet(walletAddress)
+        if (cancelled) {
+          return
+        }
+
+        setDocuments(loadedDocuments)
+        const initialDocument = loadedDocuments.find(doc => doc.id === currentDocumentId) || loadedDocuments[0] || null
+        setCurrentDocument(initialDocument || null)
+        setDocumentTitle(initialDocument?.title || '')
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to load documents from Redis:', error)
+          toast.error('Failed to load documents from Redis', { duration: 1500 })
+        }
+      }
+    }
+
+    loadDocumentsForWallet()
+
+    return () => {
+      cancelled = true
+    }
+  }, [walletAddress])
+
+  // Close dropdown menu when clicking outside (fallback for modal={false})
+  useEffect(() => {
+    if (!showMoreMenu) return
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+
+      // Find dropdown menu content (portaled by Radix)
+      const menuElement = document.querySelector('[role="menu"]')
+
+      // Check if click is inside the menu
+      if (menuElement && menuElement.contains(target)) {
+        return
+      }
+
+      // Check if click is on the trigger button or its parent
+      if (dropdownMenuRef.current && dropdownMenuRef.current.contains(target)) {
+        return
+      }
+
+      // Close menu if clicking outside
+      setShowMoreMenu(false)
+    }
+
+    // Add listener with a delay to avoid immediate closure
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside)
+    }, 100)
+
+    return () => {
+      clearTimeout(timeoutId)
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showMoreMenu])
 
 
 
@@ -155,7 +226,7 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
       const editorContent = editor.getJSON()
 
       // Get all previous transaction IDs from document history
-      const previousTransactionIds = currentDocument ? getAllPreviousTransactionIds(currentDocument.id) : []
+      const previousTransactionIds = getAllPreviousTransactionIds(currentDocument)
 
       // Encrypt the complete editorContent if password is provided
       let contentString: string
@@ -191,70 +262,77 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
       // 1. No current document exists, OR
       // 2. The title has changed significantly (indicating user wants a new document)
       const effectiveTitle = titleFromPopup?.trim() || documentTitle?.trim()
+      const normalizedTitle = effectiveTitle && effectiveTitle.length > 0 ? effectiveTitle : ''
+      const titleForLocalDoc = normalizedTitle || 'Untitled Document'
+      const titleForUpload = normalizedTitle || 'Untitled document'
       const isNewDocument = !currentDocument ||
         (currentDocument.title !== effectiveTitle && (effectiveTitle ?? '') !== '')
 
       let documentId: string
 
       if (isNewDocument) {
-        // Check if a document with this title already exists to prevent duplicates
-        const existingDocs = getAllDocuments()
-        const titleToCheck = effectiveTitle || 'Untitled Document'
-        const existingDoc = existingDocs.find(doc => doc.title === titleToCheck)
+        const titleToCheck = titleForLocalDoc
+        const existingDoc = documents.find(doc => doc.title === titleToCheck)
 
         if (existingDoc) {
-          // Document with this title already exists, use it instead
           documentId = existingDoc.id
           setCurrentDocument(existingDoc)
           setDocumentTitle(existingDoc.title)
+          await persistDocuments(documents, existingDoc.id)
         } else {
-          // Create a new document with initial content
-          const newDoc = createDocument(titleToCheck, contentString, password || undefined, previousTransactionIds)
-          if (!newDoc) {
-            toast.error('Failed to create new document')
-            setIsUploading(false)
-            return
-          }
+          const newDoc = createDocumentRecord(titleToCheck, contentString, {
+            password: password || undefined,
+            previousTransactionIds,
+          })
           documentId = newDoc.id
+          const updatedDocs = [...documents, newDoc]
+          setDocuments(updatedDocs)
           setCurrentDocument(newDoc)
           setDocumentTitle(titleToCheck)
-          const updatedDocs = getAllDocuments()
-          setDocuments(updatedDocs)
+          await persistDocuments(updatedDocs, newDoc.id)
         }
-      } else {
-        // Existing document - add new version
+      } else if (currentDocument) {
         documentId = currentDocument.id
+      } else {
+        documentId = `doc_${Date.now()}`
       }
 
       // Upload the entire document (with all versions) to Arweave
-      const result = await uploadToArweave(contentString, documentId)
+      const result = await uploadToArweave(contentString, documentId, titleForUpload)
 
       if (result.success) {
         if (isNewDocument) {
-          // For new documents, update the existing version with transaction ID
-          const documents = getAllDocuments()
-          const docIndex = documents.findIndex(doc => doc.id === documentId)
-          if (docIndex !== -1) {
-            documents[docIndex].arweaveTransactionId = result.transactionId
-            documents[docIndex].lastModified = new Date().toISOString()
-            saveDocuments(documents)
-            setCurrentDocument(documents[docIndex])
-            setDocuments(documents)
+          const updatedDocs = documents.map(doc => {
+            if (doc.id === documentId) {
+              return {
+                ...doc,
+                arweaveTransactionId: result.transactionId,
+                lastModified: new Date().toISOString(),
+              }
+            }
+            return doc
+          })
+          setDocuments(updatedDocs)
+          const updated = updatedDocs.find(doc => doc.id === documentId) || null
+          if (updated) {
+            setCurrentDocument(updated)
           }
-        } else {
-          // For existing documents, add new version
-          const updatedDoc = addDocumentVersion(
-            documentId,
+          persistDocuments(updatedDocs, updated?.id || null)
+        } else if (currentDocument) {
+          const updatedDoc = addDocumentVersionRecord(
+            currentDocument,
             contentString,
-            result.transactionId,
-            password || undefined,
-            previousTransactionIds
+            {
+              arweaveTransactionId: result.transactionId,
+              password: password || undefined,
+              previousTransactionIds,
+            }
           )
 
-          if (updatedDoc) {
-            setCurrentDocument(updatedDoc)
-            setDocuments(getAllDocuments())
-          }
+          const updatedDocs = documents.map(doc => doc.id === updatedDoc.id ? updatedDoc : doc)
+          setDocuments(updatedDocs)
+          setCurrentDocument(updatedDoc)
+          persistDocuments(updatedDocs, updatedDoc.id)
         }
 
         toast.success(`Content saved to Arweave! Transaction ID: ${result.transactionId}`, { duration: 1000 })
@@ -269,15 +347,15 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
         }
       } else {
         // Check if it's a balance issue and show funding instructions
-        if (result.error?.includes('Insufficient SOL balance')) {
+        if (result.error?.includes('Insufficient') || result.error?.includes('balance')) {
           toast.error(
             <div className="max-w-md">
-              <div className="font-semibold mb-2">Insufficient SOL Balance</div>
+              <div className="font-semibold mb-2">Insufficient AR Balance</div>
               <div className="text-sm whitespace-pre-line">
                 To fund your wallet for Arweave uploads:
                 1. Copy this wallet address: {walletAddress || 'N/A'}
-                2. Send at least 0.01 SOL to this address
-                3. You can buy SOL on exchanges like Coinbase, Binance, or use a faucet for testnet
+                2. Send at least 0.01 AR to this address
+                3. You can buy AR on exchanges like Binance, Gate.io, or use a faucet for testnet
                 4. Once funded, try uploading again
               </div>
             </div>,
@@ -386,6 +464,77 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
     }
   }
 
+  const handleShare = async () => {
+    try {
+      // Check if we're on a document page
+      const isDocumentPage = pathname?.startsWith('/document/')
+      const isStatusPage = pathname?.startsWith('/status/')
+
+      let shareUrl = ''
+      let shareTitle = 'Document'
+
+      if (isDocumentPage) {
+        const transactionId = pathname.split('/document/')[1]
+        if (transactionId) {
+          const origin = typeof window !== 'undefined' ? window.location.origin : ''
+          shareUrl = `${origin}/document/${transactionId}`
+          shareTitle = 'View Document'
+        }
+      } else if (isStatusPage) {
+        const transactionId = pathname.split('/status/')[1]
+        if (transactionId) {
+          const origin = typeof window !== 'undefined' ? window.location.origin : ''
+          shareUrl = `${origin}/status/${transactionId}`
+          shareTitle = 'Document Status'
+        }
+      } else {
+        // If not on a specific page, use current URL
+        shareUrl = typeof window !== 'undefined' ? window.location.href : ''
+        shareTitle = 'Document Editor'
+      }
+
+      if (!shareUrl) {
+        toast.error('No shareable link available', { duration: 2000 })
+        return
+      }
+
+      // Try Web Share API first (mobile and modern browsers)
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: shareTitle,
+            text: 'Check out this document',
+            url: shareUrl,
+          })
+          toast.success('Shared successfully', { duration: 1500 })
+        } catch (shareError: any) {
+          // User cancelled or share failed, fall back to copy
+          if (shareError.name !== 'AbortError') {
+            throw shareError
+          }
+          return
+        }
+      } else {
+        // Fallback to copying link
+        await navigator.clipboard.writeText(shareUrl)
+        toast.success('Link copied to clipboard', { duration: 1500 })
+      }
+    } catch (e) {
+      // If Web Share API fails, try copying as fallback
+      try {
+        const origin = typeof window !== 'undefined' ? window.location.origin : ''
+        const currentPath = pathname || ''
+        const shareUrl = `${origin}${currentPath}`
+        await navigator.clipboard.writeText(shareUrl)
+        toast.success('Link copied to clipboard', { duration: 1500 })
+      } catch (copyError) {
+        toast.error('Failed to share', { duration: 2000 })
+      }
+    } finally {
+      setShowMoreMenu(false)
+    }
+  }
+
   const handleMenuLoad = () => {
     setShowLoadModal(true)
   }
@@ -399,15 +548,8 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
     setShowMoreMenu(false)
   }
 
-  const handleCopyWalletAddress = async () => {
-    if (walletAddress) {
-      try {
-        await navigator.clipboard.writeText(walletAddress)
-        toast.success('Wallet address copied to clipboard', { duration: 1000 })
-      } catch (error) {
-        toast.error('Failed to copy wallet address', { duration: 1000 })
-      }
-    }
+  const handleWalletChange = (newAddress: string) => {
+    setWalletAddress(newAddress)
   }
 
   const handleLoadFromVersion = (versionNumber: number) => {
@@ -435,11 +577,11 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
       setShowPasswordPromptPopup(true)
     } else {
       // Version is not password protected, load normally
-      const storedContent = getVersionContent(currentDocument.id, versionNumber)
+      const storedContent = getVersionContent(currentDocument, versionNumber)
       if (storedContent) {
         loadVersionContent(storedContent, versionNumber)
       } else {
-        toast.error(`Version ${versionNumber} content not found in local storage`, { duration: 1000 })
+        toast.error(`Version ${versionNumber} content not found in document store`, { duration: 1000 })
       }
     }
   }
@@ -451,7 +593,7 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
     }
 
     try {
-      const decryptedContent = getVersionContentWithPassword(currentDocument.id, promptVersionNumber, password)
+      const decryptedContent = getVersionContentWithPassword(currentDocument, promptVersionNumber, password)
       if (decryptedContent) {
         loadVersionContent(decryptedContent, promptVersionNumber)
       } else {
@@ -465,8 +607,8 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
   const loadVersionContent = (content: string, versionNumber: number) => {
     if (!editor) return
 
-    // Track that this is from localStorage
-    setDataSource('localStorage')
+    // Track that this is from Redis document store
+    setDataSource('redis')
     setShowIndicator(true)
     // Hide indicator after 5 seconds
     setTimeout(() => setShowIndicator(false), 5000)
@@ -496,15 +638,15 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
 
     // Update the current document to reflect the selected version
     if (currentDocument) {
-      // Update the current version number in the document
-      const documents = getAllDocuments()
-      const docIndex = documents.findIndex(doc => doc.id === currentDocument.id)
-      if (docIndex !== -1) {
-        documents[docIndex].currentVersionNumber = versionNumber
-        saveDocuments(documents)
-        setCurrentDocument(documents[docIndex])
-        setDocumentTitle(documents[docIndex].title)
+      const updatedDoc: Document = {
+        ...currentDocument,
+        currentVersionNumber: versionNumber,
       }
+      const updatedDocs = documents.map(doc => doc.id === updatedDoc.id ? updatedDoc : doc)
+      setCurrentDocument(updatedDoc)
+      setDocumentTitle(updatedDoc.title)
+      setDocuments(updatedDocs)
+      persistDocuments(updatedDocs, updatedDoc.id)
     }
   }
 
@@ -514,6 +656,7 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
     if (doc) {
       setCurrentDocument(doc)
       setDocumentTitle(doc.title)
+      persistDocuments(documents, doc.id)
 
       // If latest version is password protected, prompt immediately
       const latest = doc.versions?.[0]
@@ -538,11 +681,10 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
       }
     }
 
-    // Get latest version content from document (instant loading)
-    const latestContent = getLatestVersionContent(documentId)
+    const latestContent = doc ? getLatestVersionContent(doc) : null
 
-    // Track that this is from localStorage
-    setDataSource('localStorage')
+    // Track that this is from Redis
+    setDataSource('redis')
     setShowIndicator(true)
     // Hide indicator after 5 seconds
     setTimeout(() => setShowIndicator(false), 5000)
@@ -579,18 +721,15 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
         }
       }, 200)
     } else {
-      toast.error('Document content not found in local storage', { duration: 1000 })
+      toast.error('Document content not found in Redis storage', { duration: 1000 })
     }
-
-    // Refresh the documents list to ensure we have the latest data
-    const updatedDocs = getAllDocuments()
-    setDocuments(updatedDocs)
   }
 
   const handleNewDocument = () => {
     setCurrentDocument(null)
     setDocumentTitle('')
     editor?.commands.setContent('')
+    persistDocuments(documents, null)
   }
 
   // Expose functions to parent components
@@ -664,7 +803,7 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
           {/* Permanent Data Source Indicator - to the left of Save button */}
           {(propDataSource || dataSource) && (
             <div className="flex items-center gap-1.5">
-              {propDataSource === 'api' && (
+              {/* {propDataSource === 'api' && (
                 <div className="flex items-center gap-1.5 px-2 py-1 bg-green-100 text-green-700 rounded-md border border-green-300 ">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 </div>
@@ -673,16 +812,16 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
                 <div className="flex items-center gap-1.5 px-2 py-1 bg-gray-100 text-gray-700 rounded-md border border-gray-300">
                   <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
                 </div>
-              )}
+              )} */}
               {/* Earth icon for Arweave - redirects to Arweave transaction */}
               {transactionId && (
                 <button
-                  onClick={() => window.open(`https://arweave.net/${transactionId}`, '_blank')}
+                  onClick={() => router.push(`/status/${transactionId}`)}
                   className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-blue-50 transition-colors"
                   title="View on Arweave"
-                  disabled={propDataSource !== 'api'}
+                // disabled={propDataSource !== 'api'}
                 >
-                  <Globe className="w-4 h-4 {propDataSource === 'api' ? 'text-blue-600' : 'text-gray-500'}" />
+                  <Globe className={`w-4 h-4 ${propDataSource === 'api' ? 'text-blue-600' : 'text-gray-500'}`} />
                 </button>
               )}
             </div>
@@ -698,76 +837,97 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
             <Save className="w-4 h-4" />
             {isUploading ? "Saving..." : "Save"}
           </Button>
-          <DropdownMenu open={showMoreMenu} onOpenChange={setShowMoreMenu}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-gray-600 hover:text-gray-900"
-                title="More options"
-              >
-                <MoreVertical className="w-5 h-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              portal={true}
-              className="bg-gray-50 border border-gray-200 rounded-lg shadow-lg p-1 min-w-[160px]"
-              onInteractOutside={() => {
-                setShowMoreMenu(false)
-              }}
+          <div ref={dropdownMenuRef}>
+            <DropdownMenu
+              open={showMoreMenu}
+              onOpenChange={setShowMoreMenu}
             >
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-600 hover:text-gray-900"
+                  title="More options"
+                >
+                  <MoreVertical className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                portal={true}
+                className="bg-gray-50 border border-gray-200 rounded-lg shadow-lg p-1 min-w-[160px]"
+                onInteractOutside={(e) => {
+                  e.preventDefault()
+                  setShowMoreMenu(false)
+                }}
+                onEscapeKeyDown={() => {
+                  setShowMoreMenu(false)
+                }}
+              >
 
 
-              <DropdownMenuItem
-                onSelect={(e) => {
-                  e.preventDefault()
-                  handleShowAccountDetails()
-                  setShowMoreMenu(false)
-                }}
-                className="cursor-pointer flex items-center whitespace-nowrap px-3 py-2 rounded-md hover:bg-orange-50 hover:text-orange-700 transition-colors"
-              >
-                <Wallet className="w-4 h-4 mr-2 flex-shrink-0" />
-                <span>Account Detail</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={(e) => {
-                  e.preventDefault()
-                  handleMenuLoad()
-                  setShowMoreMenu(false)
-                }}
-                disabled={isLoading}
-                className="cursor-pointer flex items-center whitespace-nowrap px-3 py-2 rounded-md hover:bg-blue-50 hover:text-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Download className="w-4 h-4 mr-2 flex-shrink-0" />
-                <span>Load</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={(e) => {
-                  e.preventDefault()
-                  handleCopyShareLink()
-                  setShowMoreMenu(false)
-                }}
-                className="cursor-pointer flex items-center whitespace-nowrap px-3 py-2 rounded-md hover:bg-green-50 hover:text-green-700 transition-colors"
-              >
-                <Copy className="w-4 h-4 mr-2 flex-shrink-0" />
-                <span>Copy</span>
-              </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault()
+                    handleShowAccountDetails()
+                    setShowMoreMenu(false)
+                  }}
+                  className="cursor-pointer flex items-center whitespace-nowrap px-3 py-2 rounded-md hover:bg-orange-50 hover:text-orange-700 transition-colors"
+                >
+                  <Wallet className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Account Detail</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault()
+                    handleMenuLoad()
+                    setShowMoreMenu(false)
+                  }}
+                  disabled={isLoading}
+                  className="cursor-pointer flex items-center whitespace-nowrap px-3 py-2 rounded-md hover:bg-blue-50 hover:text-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Download className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Load</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault()
+                    handleCopyShareLink()
+                    setShowMoreMenu(false)
+                  }}
+                  className="cursor-pointer flex items-center whitespace-nowrap px-3 py-2 rounded-md hover:bg-green-50 hover:text-green-700 transition-colors"
+                >
+                  <Copy className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Copy</span>
+                </DropdownMenuItem>
 
-              <DropdownMenuItem
-                onSelect={(e) => {
-                  e.preventDefault()
-                  handleMenuSave()
-                  setShowMoreMenu(false)
-                }}
-                disabled={isUploading || !editor}
-                className="cursor-pointer flex items-center whitespace-nowrap px-3 py-2 rounded-md hover:bg-purple-50 hover:text-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Save className="w-4 h-4 mr-2 flex-shrink-0" />
-                <span>{isUploading ? 'Saving...' : 'Save'}</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault()
+                    handleShare()
+                    setShowMoreMenu(false)
+                  }}
+                  className="cursor-pointer flex items-center whitespace-nowrap px-3 py-2 rounded-md hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                >
+                  <Share2 className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>Share</span>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault()
+                    handleMenuSave()
+                    setShowMoreMenu(false)
+                  }}
+                  disabled={isUploading || !editor}
+                  className="cursor-pointer flex items-center whitespace-nowrap px-3 py-2 rounded-md hover:bg-purple-50 hover:text-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Save className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span>{isUploading ? 'Saving...' : 'Save'}</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 
@@ -835,56 +995,12 @@ const Editor = forwardRef<EditorRef, EditorProps>(({ content, setContent, onSide
       )}
 
       {/* Account Details Modal */}
-      {showAccountDetails && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96 max-w-md mx-4">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Wallet className="w-5 h-5" />
-              Account Details
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Wallet Address
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={walletAddress || 'No wallet found'}
-                    readOnly
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 font-mono text-sm"
-                  />
-                  {walletAddress && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleCopyWalletAddress}
-                      className="flex-shrink-0"
-                      title="Copy address"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-              {walletAddress && (
-                <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-md">
-                  <p className="font-medium mb-1">Wallet Information:</p>
-                  <p>This is your Solana wallet address used for Arweave transactions. Keep it secure and fund it with SOL to upload content to Arweave.</p>
-                </div>
-              )}
-              <div className="flex gap-2 justify-end">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowAccountDetails(false)}
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <AccountDetailsModal
+        isOpen={showAccountDetails}
+        onClose={() => setShowAccountDetails(false)}
+        walletAddress={walletAddress}
+        onWalletChange={handleWalletChange}
+      />
 
     </div>
   )

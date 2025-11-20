@@ -23,7 +23,7 @@ export default function DocumentPage() {
     const [showPasswordPrompt, setShowPasswordPrompt] = useState(false)
     const [encryptedContent, setEncryptedContent] = useState<string | null>(null)
     const [loadedContent, setLoadedContent] = useState<string | null>(null)
-    const [dataSource, setDataSource] = useState<'api' | 'redis' | 'localStorage' | null>(null)
+    const [dataSource, setDataSource] = useState<'api' | 'redis' | null>(null)
     const hasLoadedFromUrl = useRef(false)
 
     const toggleEditorSidebar = useCallback(() => {
@@ -33,18 +33,6 @@ export default function DocumentPage() {
     const closeEditorSidebar = () => {
         setIsEditorSidebarOpen(false)
     }
-
-    const handleLoadVersion = useCallback((versionNumber: number) => {
-        if (editorRef.current) {
-            editorRef.current.loadFromVersion(versionNumber)
-        }
-    }, [])
-
-    const handleLoadDocument = useCallback((documentId: string) => {
-        if (editorRef.current) {
-            editorRef.current.loadDocument(documentId)
-        }
-    }, [])
 
     useEffect(() => {
         const loadDocument = async () => {
@@ -265,14 +253,10 @@ export default function DocumentPage() {
                 />
                 {/* <Header /> */}
             </div>
-            {handleLoadVersion && handleLoadDocument && (
-                <Sidebar
-                    isOpen={isEditorSidebarOpen}
-                    onClose={closeEditorSidebar}
-                    onLoadVersion={handleLoadVersion}
-                    onLoadDocument={handleLoadDocument}
-                />
-            )}
+            <Sidebar
+                isOpen={isEditorSidebarOpen}
+                onClose={closeEditorSidebar}
+            />
 
             {/* Password Prompt Popup */}
             <PasswordPromptPopup

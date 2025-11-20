@@ -11,11 +11,11 @@ export default function PricingSection() {
       annually: 0,
     },
     professional: {
-      monthly: 0.01, // ~$0.01 SOL per document
+      monthly: 0.01, // ~$0.01 AR per document
       annually: 0.01,
     },
     enterprise: {
-      monthly: 0.05, // ~$0.05 SOL per document
+      monthly: 0.05, // ~$0.05 AR per document
       annually: 0.05,
     },
   }
@@ -64,7 +64,7 @@ export default function PricingSection() {
           <div className="text-center text-[#605A57] text-sm font-normal leading-6 font-sans">
             💡 <strong>Pay once, store forever.</strong> All uploads are stored permanently on Arweave blockchain.
             <br />
-            Payment is made in SOL (Solana) via Bundlr. No recurring fees, no data expiration.
+            Payment is made in AR (Arweave) via Bundlr. No recurring fees, no data expiration.
           </div>
         </div>
       </div>
@@ -144,7 +144,7 @@ export default function PricingSection() {
                   "Permanent Arweave storage",
                   "Version history",
                   "Password protection",
-                  "Solana wallet integration",
+                  "Arweave wallet integration",
                 ].map((feature, index) => (
                   <div key={index} className="self-stretch flex justify-start items-center gap-[13px]">
                     <div className="w-4 h-4 relative flex items-center justify-center">
@@ -225,7 +225,7 @@ export default function PricingSection() {
                   "Permanent Arweave storage",
                   "Version history",
                   "Password protection",
-                  "Solana wallet integration",
+                  "Arweave wallet integration",
                   "Fast upload via Bundlr",
                   "Redis caching",
                   "Transaction tracking",

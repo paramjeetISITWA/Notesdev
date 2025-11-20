@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Keypair, Connection } from '@solana/web3.js';
 import Bundlr from '@bundlr-network/client';
-import bs58 from 'bs58';
+import Arweave from 'arweave';
 import { saveDocumentToRedis, saveUserTransactionIds } from '@/lib/redis-utils';
 
 export async function POST(request: NextRequest) {
     try {
-        const { content, documentId, privateKey } = await request.json();
+        const { content, documentId, jwk, title } = await request.json();
 
         if (!content) {
             return NextResponse.json(
@@ -15,46 +14,34 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        if (!privateKey) {
+        if (!jwk) {
             return NextResponse.json(
-                { success: false, error: 'Private key is required' },
+                { success: false, error: 'Arweave wallet (JWK) is required' },
                 { status: 400 }
             );
         }
 
-        // Load Solana wallet from request body
-        let solanaWallet: Keypair;
+        // Initialize Arweave to get wallet address and check balance
+        const arweave = Arweave.init({
+            host: 'arweave.net',
+            port: 443,
+            protocol: 'https'
+        });
 
-        try {
-            console.log('Using private key from request');
-            solanaWallet = Keypair.fromSecretKey(bs58.decode(privateKey));
-        } catch (error) {
-            console.error('Error parsing private key:', error);
-            return NextResponse.json(
-                { success: false, error: 'Invalid private key format' },
-                { status: 400 }
-            );
-        }
+        // Get wallet address from JWK
+        const walletAddress = await arweave.wallets.jwkToAddress(jwk);
+        console.log('Arweave wallet address:', walletAddress);
 
-        console.log('Wallet public key:', solanaWallet.publicKey.toBase58());
+        // Check AR balance
+        const balance = await arweave.wallets.getBalance(walletAddress);
+        const arBalance = arweave.ar.winstonToAr(balance);
+        console.log("AR Balance:", arBalance, "AR");
 
-        // Connect to Solana Mainnet
-        const RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
-        const connection = new Connection(RPC_URL, 'confirmed');
-
-        // Check balance
-        const balance = await connection.getBalance(solanaWallet.publicKey);
-        const solBalance = balance / 1e9;
-        console.log("SOL Balance:", solBalance, "SOL");
-
-
-
-        // Initialize Bundlr client (using the working server approach)
+        // Initialize Bundlr client with Arweave wallet
         const bundlr = new Bundlr(
             'https://node1.bundlr.network',
-            'solana',
-            solanaWallet.secretKey,
-            { providerUrl: RPC_URL }
+            'arweave',
+            jwk
         );
 
         // Convert content to Buffer like server.js does
@@ -74,6 +61,10 @@ export async function POST(request: NextRequest) {
             tags.push({ name: 'Document-ID', value: documentId });
         }
 
+        if (title) {
+            tags.push({ name: 'Title', value: title });
+        }
+
         const transaction = await bundlr.upload(data, {
             tags,
             // waitForConfirmation: false,
@@ -85,19 +76,23 @@ export async function POST(request: NextRequest) {
         console.log('Arweave URL: https://arweave.net/' + transaction.id);
         console.log('Transaction:', transaction);
 
-        const walletAddress = solanaWallet.publicKey.toBase58();
         const txId = transaction.id;
 
         // Save document to Redis immediately (before Arweave publishes)
         try {
             await saveDocumentToRedis(txId, content, {
                 documentId: documentId,
+                title: title || 'Untitled document',
                 walletAddress: walletAddress,
                 timestamp: new Date().toISOString(),
             });
 
-            // Save transaction ID to user's transaction list
-            await saveUserTransactionIds(walletAddress, txId);
+            // Save transaction ID to user's pending transaction list
+            await saveUserTransactionIds(walletAddress, txId, {
+                documentId: documentId,
+                title: title || 'Untitled document',
+                savedAt: new Date().toISOString(),
+            });
 
             console.log('Document saved to Redis with transaction ID:', txId);
         } catch (redisError) {
@@ -110,7 +105,7 @@ export async function POST(request: NextRequest) {
             transactionId: txId,
             arweaveUrl: `https://arweave.net/${txId}`,
             walletAddress: walletAddress,
-            balance: solBalance
+            balance: arBalance
         });
 
     } catch (error) {

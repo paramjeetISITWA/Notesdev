@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { ChevronDown, Clock, FileText, Lock } from 'lucide-react'
-import { DocumentVersion } from '@/lib/arweave-utils'
+import { DocumentVersion } from '@/lib/types/document'
 
 interface VersionDropdownButtonProps {
     versions: DocumentVersion[]
